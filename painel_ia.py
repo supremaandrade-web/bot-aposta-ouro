@@ -448,6 +448,9 @@ if check_password():
     else:
         st.sidebar.warning("⚠️ MODO MANUTENÇÃO: Robô pausado.")
         piloto_automatico = False
+        banca = st.sidebar.number_input("💵 Banca VIP (R$)", value=1000.0)
+    stake_base = banca * 0.02
+    st.sidebar.write(f"Stake Base (2%): **R$ {stake_base:.2f}**")
 
     # ==========================================
     # 📊 FECHAMENTO DE CAIXA
@@ -472,7 +475,7 @@ if check_password():
     # 📊 CORPO PRINCIPAL DO PAINEL
     # ==========================================
     st.title("👑 PAINEL IA SUPREMA - VISÃO SUPER-HUMANA")    
-    # --- NOVO: BLOCO DE ESTATÍSTICAS E GRÁFICOS ---
+    # --- DASHBOARD DE ESTATÍSTICAS ---
     try:
         url_planilha = "https://docs.google.com/spreadsheets/d/1Y4D4t2svOeT24vnKcWnzDcwz7tPyRvkeDP8sSm_xPkQ/edit?usp=sharing"
         df_historico = conn.read(spreadsheet=url_planilha)
@@ -484,14 +487,13 @@ if check_password():
             c2.metric("Greens", len(df_historico[df_historico['Resultado'] == 'GREEN']))
             c3.metric("Reds", len(df_historico[df_historico['Resultado'] == 'RED']))
             
-            # Gráfico de Barras por Dia
             st.markdown("### 📈 Histórico de Sinais Enviados")
-            # Criando uma coluna de data simples para o gráfico
+            # Converte a data para garantir que o gráfico entenda o tempo
             df_historico['Data_Simples'] = pd.to_datetime(df_historico['Data']).dt.date
             sinais_por_dia = df_historico.groupby('Data_Simples').size()
             st.bar_chart(sinais_por_dia)
-    except:
-        st.info("📊 Os gráficos serão gerados automaticamente assim que os sinais forem salvos no Sheets.")
+    except Exception as e:
+        st.info("📊 Os gráficos aparecerão assim que os primeiros sinais forem salvos no Google Sheets.")
     # ⚽💰 Gráfico Superior de Título (Troféu VIP e Bola Estáveis)
     st.markdown(
         """
