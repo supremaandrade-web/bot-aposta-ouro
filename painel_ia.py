@@ -519,20 +519,23 @@ if check_password():
             df_historico['Data_Grafico'] = pd.to_datetime(df_historico['Data']).dt.date
             sinais_dia = df_historico.groupby('Data_Grafico').size()
             st.bar_chart(sinais_dia)
-            # --- 🏟️ JOGOS EM MONITORAMENTO (AO VIVO) ---
+    except Exception as e:
+        st.info("📊 Os gráficos aparecerão assim que os primeiros sinais forem salvos no Sheets.")
+
+    # --- 🏟️ JOGOS EM MONITORAMENTO (AO VIVO) ---
     st.divider()
     st.header("🏟️ Apostas Aguardando Resultado")
     
-    # Filtra na planilha apenas o que não tem 'GREEN' ou 'RED' ainda
     try:
+        # Filtra na planilha apenas o que não tem 'GREEN' ou 'RED' ainda
         df_pendentes = df_historico[df_historico['Resultado'].isna() | (df_historico['Resultado'] == "")]
         
         if not df_pendentes.empty:
             for _, jogo in df_pendentes.iterrows():
-                with st.expander(f"⏳ {jogo['Jogo']}", expanded=True):
+                with st.expander(f"⏳ {jogo['Casa']} x {jogo['Fora']}", expanded=True):
                     col_a, col_b, col_c = st.columns(3)
-                    col_a.write(f"**Entrada:** {jogo['Tipo']}")
-                    col_b.write(f"**Stake:** R$ {jogo['Stake']}")
+                    col_a.write(f"**Entrada:** {jogo['Previsao_IA']}")
+                    col_b.write(f"**Stake:** R$ {jogo['Lucro'] if float(jogo['Lucro']) < 0 else jogo['Lucro']}")
                     col_c.write(f"**Data:** {jogo['Data']}")
                     st.caption("O robô removerá este card assim que o resultado for processado.")
         else:
