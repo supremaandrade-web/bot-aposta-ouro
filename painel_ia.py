@@ -36,8 +36,8 @@ if check_password():
         TOKEN_TELEGRAM = st.secrets["TOKEN_TELEGRAM"]
         CHAT_ID = st.secrets["CHAT_ID"]
     except KeyError:
-    st.error("⚠️ Configure o arquivo .streamlit/secrets.toml com suas chaves.")
-    st.stop()
+     st.error("⚠️ Configure o arquivo .streamlit/secrets.toml com suas chaves.")
+     st.stop()
 
     st.set_page_config(page_title="IA SUPREMA - VIP Dashboard", layout="wide", page_icon="👑")
         # ==========================================
