@@ -449,10 +449,6 @@ if check_password():
         st.sidebar.warning("⚠️ MODO MANUTENÇÃO: Robô pausado.")
         piloto_automatico = False
 
-    st.sidebar.markdown("---")
-    banca = st.sidebar.number_input("💵 Banca VIP (R$)", value=1000.0)
-    stake_base = banca * 0.02
-    st.sidebar.write(f"Stake Base (2%): **R$ {stake_base:.2f}**")
     # ==========================================
     # 📊 FECHAMENTO DE CAIXA
     # ==========================================
