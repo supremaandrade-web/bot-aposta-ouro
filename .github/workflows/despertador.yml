@@ -1,0 +1,16 @@
+name: Despertador do Robô
+
+on:
+  schedule:
+    # Faz o robô acordar a cada 6 horas (4 vezes por dia)
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Permite que você teste clicando em um botão
+
+jobs:
+  acordar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Visitar o Painel
+        run: |
+          curl -s https://paineliapy-xhsluoqusu5vmbc9dxjzxi.streamlit.app/ > /dev/null
+          echo "Cutucada enviada com sucesso!"
