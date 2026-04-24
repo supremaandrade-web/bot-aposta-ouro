@@ -43,7 +43,7 @@ if check_password():
         # ==========================================
         # 🎨 DESIGN SUPER PREMIUM (TEMA APOSTAS VIP)
         # ==========================================
-        st.markdown("""
+    st.markdown("""
         <style>
             /* Importa fonte esportiva do Google */
             @import url('https://fonts.googleapis.com/css2?family=Teko:wght@400;600&family=Montserrat:wght@400;700&display=swap');
