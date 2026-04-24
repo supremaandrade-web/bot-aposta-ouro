@@ -437,9 +437,11 @@ if check_password():
     st.sidebar.image("https://cdn-icons-png.flaticon.com/512/4712/4712139.png", use_container_width=True)
     st.sidebar.title("🎮 Painel de Controle")
     
-    # --- CHAVE MESTRA (Substituindo o antigo Piloto Automático) ---
-    # Se ligada, o robô trabalha sozinho mesmo com site fechado.
-    # Se desligada, ele para tudo para você fazer manutenção.
+    # 1. Definir a Banca primeiro (Isso evita o erro NameError)
+    banca = st.sidebar.number_input("💵 Banca VIP (R$)", value=1000.0)
+    stake_base = banca * 0.02
+    
+    # 2. Chave Mestra de Automação
     modo_auto = st.sidebar.toggle("🚀 EXECUTAR ROBÔ 24/7", value=True)
     
     if modo_auto:
@@ -448,10 +450,10 @@ if check_password():
     else:
         st.sidebar.warning("⚠️ MODO MANUTENÇÃO: Robô pausado.")
         piloto_automatico = False
-        banca = st.sidebar.number_input("💵 Banca VIP (R$)", value=1000.0)
-    stake_base = banca * 0.02
-    st.sidebar.write(f"Stake Base (2%): **R$ {stake_base:.2f}**")
 
+    st.sidebar.markdown("---")
+    st.sidebar.write(f"Stake Base (2%): **R$ {stake_base:.2f}**")
+    
     # ==========================================
     # 📊 FECHAMENTO DE CAIXA
     # ==========================================
@@ -475,7 +477,8 @@ if check_password():
     # 📊 CORPO PRINCIPAL DO PAINEL
     # ==========================================
     st.title("👑 PAINEL IA SUPREMA - VISÃO SUPER-HUMANA")    
-    # --- DASHBOARD DE ESTATÍSTICAS ---
+    
+    # --- BLOCO DE ESTATÍSTICAS E GRÁFICOS ---
     try:
         url_planilha = "https://docs.google.com/spreadsheets/d/1Y4D4t2svOeT24vnKcWnzDcwz7tPyRvkeDP8sSm_xPkQ/edit?usp=sharing"
         df_historico = conn.read(spreadsheet=url_planilha)
@@ -484,16 +487,16 @@ if check_password():
             st.subheader("📊 Performance em Tempo Real")
             c1, c2, c3 = st.columns(3)
             c1.metric("Total de Sinais", len(df_historico))
+            # Garante que as colunas de Green/Red existam na sua planilha para contar
             c2.metric("Greens", len(df_historico[df_historico['Resultado'] == 'GREEN']))
             c3.metric("Reds", len(df_historico[df_historico['Resultado'] == 'RED']))
             
             st.markdown("### 📈 Histórico de Sinais Enviados")
-            # Converte a data para garantir que o gráfico entenda o tempo
             df_historico['Data_Simples'] = pd.to_datetime(df_historico['Data']).dt.date
             sinais_por_dia = df_historico.groupby('Data_Simples').size()
             st.bar_chart(sinais_por_dia)
     except Exception as e:
-        st.info("📊 Os gráficos aparecerão assim que os primeiros sinais forem salvos no Google Sheets.")
+        st.info("📊 Os gráficos serão gerados automaticamente assim que os sinais forem salvos no Sheets.")
     # ⚽💰 Gráfico Superior de Título (Troféu VIP e Bola Estáveis)
     st.markdown(
         """
