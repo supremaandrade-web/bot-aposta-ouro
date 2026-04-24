@@ -7,6 +7,26 @@ import os
 from datetime import datetime
 from streamlit_autorefresh import st_autorefresh
 from streamlit_gsheets import GSheetsConnection
+# --- FUNÇÃO DE DEFESA (TELA DE LOGIN) ---
+def check_password():
+    """Retorna True se o usuário inseriu a senha correta."""
+    if "password_correct" not in st.session_state:
+        st.session_state["password_correct"] = False
+
+    if not st.session_state["password_correct"]:
+        st.title("🔐 Acesso Restrito - IA SUPREMA")
+        password = st.text_input("Digite a senha de acesso:", type="password")
+        if st.button("Entrar"):
+            if password == st.secrets["SENHA_PAINEL"]:
+                st.session_state["password_correct"] = True
+                st.rerun()
+            else:
+                st.error("🚀 Senha incorreta. Acesso negado.")
+        return False
+    return True
+
+# --- INÍCIO DA PROTEÇÃO ---
+if check_password():
 
 # ==========================================
 # 🔐 CONFIGURAÇÕES SEGURAS
