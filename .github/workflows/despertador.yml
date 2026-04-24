@@ -1,16 +1,16 @@
-name: Despertador do Robô
+name: Despertador do Robô IA 24h
 
 on:
   schedule:
-    # Faz o robô acordar a cada 6 horas (4 vezes por dia)
-    - cron: '0 */6 * * *'
-  workflow_dispatch: # Permite que você teste clicando em um botão
+    # O robô vai "acordar" no início de cada hora (ex: 13:00, 14:00, 15:00...)
+    - cron: '0 * * * *'
+  workflow_dispatch: # Permite que você rode manualmente se quiser testar
 
 jobs:
-  acordar:
+  visitar_painel:
     runs-on: ubuntu-latest
     steps:
-      - name: Visitar o Painel
+      - name: Acessando o Painel via Nuvem
         run: |
-          curl -s https://paineliapy-xhsluoqusu5vmbc9dxjzxi.streamlit.app/ > /dev/null
-          echo "Cutucada enviada com sucesso!"
+          curl -sS ${{ secrets.URL_DO_SEU_PAINEL }} > /dev/null
+          echo "Visita realizada com sucesso às $(date)"
