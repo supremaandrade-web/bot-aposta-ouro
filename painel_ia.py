@@ -434,28 +434,25 @@ if check_password():
     # ==========================================
     # 🖥️ INTERFACE E CONTROLES LATERAIS
     # ==========================================
-    # ==========================================
-    # 🖼️ LOGO PERSONALIZADO (Topo da Sidebar)
-    # ==========================================
-    # Cole o link do seu logo real aqui depois:
-    URL_LOGO = "https://cdn-icons-png.flaticon.com/512/3233/3233519.png" 
-    
-    # 🤖 Novo Logo de Robô (Link estável e comando atualizado)
     st.sidebar.image("https://cdn-icons-png.flaticon.com/512/4712/4712139.png", use_container_width=True)
-    st.sidebar.markdown("---")
-    st.sidebar.title("Configurações VIP")
+    st.sidebar.title("🎮 Painel de Controle")
     
+    # --- CHAVE MESTRA (Substituindo o antigo Piloto Automático) ---
+    # Se ligada, o robô trabalha sozinho mesmo com site fechado.
+    # Se desligada, ele para tudo para você fazer manutenção.
+    modo_auto = st.sidebar.toggle("🚀 EXECUTAR ROBÔ 24/7", value=True)
+    
+    if modo_auto:
+        st.sidebar.success("🤖 BOT ATIVO: Trabalhando sozinho via nuvem.")
+        piloto_automatico = True 
+    else:
+        st.sidebar.warning("⚠️ MODO MANUTENÇÃO: Robô pausado.")
+        piloto_automatico = False
+
+    st.sidebar.markdown("---")
     banca = st.sidebar.number_input("💵 Banca VIP (R$)", value=1000.0)
     stake_base = banca * 0.02
     st.sidebar.write(f"Stake Base (2%): **R$ {stake_base:.2f}**")
-    
-    st.sidebar.markdown("---")
-    st.sidebar.progress(min(st.session_state.consultas / 100, 1.0))
-    st.sidebar.write(f"Créditos Hoje: **{st.session_state.consultas}/100**")
-    st.sidebar.caption("Ligas de Ouro ativadas para proteção de créditos.")
-    st.sidebar.markdown("---")
-    piloto_automatico = st.sidebar.toggle("🤖 PILOTO AUTOMÁTICO", value=False)
-    st.sidebar.caption("Se ativado, o robô analisa e envia sinais sozinho a cada 15 minutos.")
     # ==========================================
     # 📊 FECHAMENTO DE CAIXA
     # ==========================================
@@ -478,7 +475,27 @@ if check_password():
     # ==========================================
     # 📊 CORPO PRINCIPAL DO PAINEL
     # ==========================================
-    st.title("👑 PAINEL IA SUPREMA - VISÃO SUPER-HUMANA")
+    st.title("👑 PAINEL IA SUPREMA - VISÃO SUPER-HUMANA")    
+    # --- NOVO: BLOCO DE ESTATÍSTICAS E GRÁFICOS ---
+    try:
+        url_planilha = "https://docs.google.com/spreadsheets/d/1Y4D4t2svOeT24vnKcWnzDcwz7tPyRvkeDP8sSm_xPkQ/edit?usp=sharing"
+        df_historico = conn.read(spreadsheet=url_planilha)
+        
+        if not df_historico.empty:
+            st.subheader("📊 Performance em Tempo Real")
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Total de Sinais", len(df_historico))
+            c2.metric("Greens", len(df_historico[df_historico['Resultado'] == 'GREEN']))
+            c3.metric("Reds", len(df_historico[df_historico['Resultado'] == 'RED']))
+            
+            # Gráfico de Barras por Dia
+            st.markdown("### 📈 Histórico de Sinais Enviados")
+            # Criando uma coluna de data simples para o gráfico
+            df_historico['Data_Simples'] = pd.to_datetime(df_historico['Data']).dt.date
+            sinais_por_dia = df_historico.groupby('Data_Simples').size()
+            st.bar_chart(sinais_por_dia)
+    except:
+        st.info("📊 Os gráficos serão gerados automaticamente assim que os sinais forem salvos no Sheets.")
     # ⚽💰 Gráfico Superior de Título (Troféu VIP e Bola Estáveis)
     st.markdown(
         """
