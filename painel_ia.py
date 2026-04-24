@@ -444,6 +444,15 @@ if check_password():
     # 2. Chave Mestra de Automação
     modo_auto = st.sidebar.toggle("🚀 EXECUTAR ROBÔ 24/7", value=True)
     
+    # --- VISUALIZAÇÃO DE CRÉDITOS ---
+    st.sidebar.markdown("---")
+    # Sincroniza o valor real gasto hoje
+    st.session_state.consultas = sincronizar_creditos_api()
+    
+    st.sidebar.progress(min(st.session_state.consultas / 100, 1.0))
+    st.sidebar.write(f"💳 Créditos Hoje: **{st.session_state.consultas}/100**")
+    st.sidebar.caption("Ligas de Ouro ativadas para proteção de créditos.")
+    
     if modo_auto:
         st.sidebar.success("🤖 BOT ATIVO: Trabalhando sozinho via nuvem.")
         piloto_automatico = True 
@@ -478,7 +487,7 @@ if check_password():
     # ==========================================
     st.title("👑 PAINEL IA SUPREMA - VISÃO SUPER-HUMANA")    
     
-    # --- BLOCO DE ESTATÍSTICAS E GRÁFICOS ---
+    # --- DASHBOARD DE ESTATÍSTICAS ---
     try:
         url_planilha = "https://docs.google.com/spreadsheets/d/1Y4D4t2svOeT24vnKcWnzDcwz7tPyRvkeDP8sSm_xPkQ/edit?usp=sharing"
         df_historico = conn.read(spreadsheet=url_planilha)
@@ -487,16 +496,21 @@ if check_password():
             st.subheader("📊 Performance em Tempo Real")
             c1, c2, c3 = st.columns(3)
             c1.metric("Total de Sinais", len(df_historico))
-            # Garante que as colunas de Green/Red existam na sua planilha para contar
-            c2.metric("Greens", len(df_historico[df_historico['Resultado'] == 'GREEN']))
-            c3.metric("Reds", len(df_historico[df_historico['Resultado'] == 'RED']))
+            # Conta Greens e Reds baseados na coluna 'Resultado' da sua planilha
+            greens = len(df_historico[df_historico['Resultado'] == 'GREEN'])
+            reds = len(df_historico[df_historico['Resultado'] == 'RED'])
+            c2.metric("Greens ✅", greens)
+            c3.metric("Reds ❌", reds)
             
-            st.markdown("### 📈 Histórico de Sinais Enviados")
-            df_historico['Data_Simples'] = pd.to_datetime(df_historico['Data']).dt.date
-            sinais_por_dia = df_historico.groupby('Data_Simples').size()
-            st.bar_chart(sinais_por_dia)
+            st.markdown("### 📈 Histórico de Sinais Enviados (Por Dia)")
+            # Transforma a coluna Data para o formato de dia para o gráfico de barras
+            df_historico['Data_Grafico'] = pd.to_datetime(df_historico['Data']).dt.date
+            sinais_dia = df_historico.groupby('Data_Grafico').size()
+            st.bar_chart(sinais_dia)
+        else:
+            st.info("📊 Aguardando os primeiros sinais automáticos para gerar os gráficos.")
     except Exception as e:
-        st.info("📊 Os gráficos serão gerados automaticamente assim que os sinais forem salvos no Sheets.")
+        st.error(f"Erro ao carregar gráficos: {e}")
     # ⚽💰 Gráfico Superior de Título (Troféu VIP e Bola Estáveis)
     st.markdown(
         """
@@ -635,5 +649,9 @@ if check_password():
         st.write("📝 **Logs do Sistema (Caixa Preta):**")
         for l in st.session_state.log[:6]:
             st.caption(l)
-    
+    # --- AUTOMAÇÃO DE RELATÓRIO ---
+    # Se for entre 23:45 e 23:59, o robô envia o relatório sozinho ao ser visitado pelo GitHub
+    agora_hora = datetime.now().strftime("%H:%M")
+    if "23:45" <= agora_hora <= "23:59":
+        enviar_resumo_diario()
     st_autorefresh(interval=900000, key="auto_refresh")
