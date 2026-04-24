@@ -508,26 +508,26 @@ if check_password():
             st.subheader("📊 Performance em Tempo Real")
             c1, c2, c3 = st.columns(3)
             c1.metric("Total de Sinais", len(df_historico))
-            # Conta Greens e Reds baseados na coluna 'Resultado' da sua planilha
+            
+            # Filtro seguro para Greens e Reds
             greens = len(df_historico[df_historico['Resultado'] == 'GREEN'])
             reds = len(df_historico[df_historico['Resultado'] == 'RED'])
             c2.metric("Greens ✅", greens)
             c3.metric("Reds ❌", reds)
             
             st.markdown("### 📈 Histórico de Sinais Enviados (Por Dia)")
-            # Transforma a coluna Data para o formato de dia para o gráfico de barras
             df_historico['Data_Grafico'] = pd.to_datetime(df_historico['Data']).dt.date
             sinais_dia = df_historico.groupby('Data_Grafico').size()
             st.bar_chart(sinais_dia)
     except Exception as e:
-        st.info("📊 Os gráficos aparecerão assim que os primeiros sinais forem salvos no Sheets.")
+        st.info("📊 Os gráficos aparecerão assim que os sinais forem salvos no Sheets.")
 
     # --- 🏟️ JOGOS EM MONITORAMENTO (AO VIVO) ---
     st.divider()
     st.header("🏟️ Apostas Aguardando Resultado")
     
     try:
-        # Filtra na planilha apenas o que não tem 'GREEN' ou 'RED' ainda
+        # Filtra na planilha apenas o que não tem resultado ainda
         df_pendentes = df_historico[df_historico['Resultado'].isna() | (df_historico['Resultado'] == "")]
         
         if not df_pendentes.empty:
@@ -535,17 +535,15 @@ if check_password():
                 with st.expander(f"⏳ {jogo['Casa']} x {jogo['Fora']}", expanded=True):
                     col_a, col_b, col_c = st.columns(3)
                     col_a.write(f"**Entrada:** {jogo['Previsao_IA']}")
-                    col_b.write(f"**Stake:** R$ {jogo['Lucro'] if float(jogo['Lucro']) < 0 else jogo['Lucro']}")
+                    # Tratamento numérico para evitar erros visuais
+                    lucro_val = pd.to_numeric(jogo['Lucro'], errors='coerce')
+                    col_b.write(f"**Stake:** R$ {abs(lucro_val) if pd.notna(lucro_val) else '---'}")
                     col_c.write(f"**Data:** {jogo['Data']}")
-                    st.caption("O robô removerá este card assim que o resultado for processado.")
+                    st.caption("O robô removerá este card após processar o resultado.")
         else:
-            st.info("Nenhuma aposta ativa no momento. O robô está em busca de oportunidades!")
-    except:
-        st.write("Iniciando monitoramento de jogos...")
-        else:
-            st.info("📊 Aguardando os primeiros sinais automáticos para gerar os gráficos.")
+            st.info("Nenhuma aposta ativa no momento. O robô está buscando oportunidades!")
     except Exception as e:
-        st.error(f"Erro ao carregar gráficos: {e}")
+        st.write("Aguardando registro de novos jogos...")
     # ⚽💰 Gráfico Superior de Título (Troféu VIP e Bola Estáveis)
     st.markdown(
         """
