@@ -452,7 +452,19 @@ if check_password():
     st.sidebar.progress(min(st.session_state.consultas / 100, 1.0))
     st.sidebar.write(f"💳 Créditos Hoje: **{st.session_state.consultas}/100**")
     st.sidebar.caption("Ligas de Ouro ativadas para proteção de créditos.")
-    
+    # --- STATUS DE CONEXÃO ---
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("📡 Status do Sistema")
+    try:
+        # Tenta uma chamada simples para a API do Telegram para checar o Token
+        url_teste = f"https://api.telegram.org/bot{TOKEN_TELEGRAM}/getMe"
+        resposta = requests.get(url_teste, timeout=5)
+        if resposta.status_code == 200:
+            st.sidebar.success("🟢 Telegram: Conectado")
+        else:
+            st.sidebar.error("🔴 Telegram: Erro de Token")
+    except:
+        st.sidebar.warning("🟡 Telegram: Falha de Rede")
     if modo_auto:
         st.sidebar.success("🤖 BOT ATIVO: Trabalhando sozinho via nuvem.")
         piloto_automatico = True 
@@ -507,6 +519,26 @@ if check_password():
             df_historico['Data_Grafico'] = pd.to_datetime(df_historico['Data']).dt.date
             sinais_dia = df_historico.groupby('Data_Grafico').size()
             st.bar_chart(sinais_dia)
+            # --- 🏟️ JOGOS EM MONITORAMENTO (AO VIVO) ---
+    st.divider()
+    st.header("🏟️ Apostas Aguardando Resultado")
+    
+    # Filtra na planilha apenas o que não tem 'GREEN' ou 'RED' ainda
+    try:
+        df_pendentes = df_historico[df_historico['Resultado'].isna() | (df_historico['Resultado'] == "")]
+        
+        if not df_pendentes.empty:
+            for _, jogo in df_pendentes.iterrows():
+                with st.expander(f"⏳ {jogo['Jogo']}", expanded=True):
+                    col_a, col_b, col_c = st.columns(3)
+                    col_a.write(f"**Entrada:** {jogo['Tipo']}")
+                    col_b.write(f"**Stake:** R$ {jogo['Stake']}")
+                    col_c.write(f"**Data:** {jogo['Data']}")
+                    st.caption("O robô removerá este card assim que o resultado for processado.")
+        else:
+            st.info("Nenhuma aposta ativa no momento. O robô está em busca de oportunidades!")
+    except:
+        st.write("Iniciando monitoramento de jogos...")
         else:
             st.info("📊 Aguardando os primeiros sinais automáticos para gerar os gráficos.")
     except Exception as e:
