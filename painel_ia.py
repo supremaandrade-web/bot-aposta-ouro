@@ -440,6 +440,7 @@ if check_password():
     # 1. Definir a Banca primeiro (Isso evita o erro NameError)
     banca = st.sidebar.number_input("💵 Banca VIP (R$)", value=200.0)
     stake_base = banca * 0.02
+    st.sidebar.write(f"Stake Base (2%): **R$ {stake_base:.2f}**")
     
     # 2. Chave Mestra de Automação
     modo_auto = st.sidebar.toggle("🚀 EXECUTAR ROBÔ 24/7", value=True)
@@ -473,7 +474,6 @@ if check_password():
         piloto_automatico = False
 
     st.sidebar.markdown("---")
-    st.sidebar.write(f"Stake Base (2%): **R$ {stake_base:.2f}**")
     
     # ==========================================
     # 📊 FECHAMENTO DE CAIXA
