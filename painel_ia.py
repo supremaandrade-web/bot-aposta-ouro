@@ -438,7 +438,7 @@ if check_password():
     st.sidebar.title("🎮 Painel de Controle")
     
     # 1. Definir a Banca primeiro (Isso evita o erro NameError)
-    banca = st.sidebar.number_input("💵 Banca VIP (R$)", value=1000.0)
+    banca = st.sidebar.number_input("💵 Banca VIP (R$)", value=200.0)
     stake_base = banca * 0.02
     
     # 2. Chave Mestra de Automação
