@@ -31,13 +31,13 @@ if check_password():
 # ==========================================
 # 🔐 CONFIGURAÇÕES SEGURAS
 # ==========================================
-try:
-    API_KEY = st.secrets["API_KEY"]
-    TOKEN_TELEGRAM = st.secrets["TOKEN_TELEGRAM"]
-    CHAT_ID = st.secrets["CHAT_ID"]
-except KeyError:
-    st.error("⚠️ Configure o arquivo .streamlit/secrets.toml com suas chaves.")
-    st.stop()
+    try:
+        API_KEY = st.secrets["API_KEY"]
+        TOKEN_TELEGRAM = st.secrets["TOKEN_TELEGRAM"]
+        CHAT_ID = st.secrets["CHAT_ID"]
+    except KeyError:
+        st.error("⚠️ Configure o arquivo .streamlit/secrets.toml com suas chaves.")
+        st.stop()
 
 st.set_page_config(page_title="IA SUPREMA - VIP Dashboard", layout="wide", page_icon="👑")
 # ==========================================
