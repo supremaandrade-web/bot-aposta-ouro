@@ -488,7 +488,7 @@ if check_password():
     st.sidebar.markdown(
         """
         <div style="text-align: center; color: #888888; font-size: 13px; margin-top: 20px;">
-            <b>Versão 2.0</b><br>
+            <b>Versão 2.5</b><br>
             Desenvolvido por <b>Christian Andrade💻</b>
         </div>
         """,
