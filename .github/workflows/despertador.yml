@@ -12,5 +12,5 @@ jobs:
     steps:
       - name: Acessando o Painel via Nuvem
         run: |
-          curl -sS ${{ secrets.URL_DO_SEU_PAINEL }} > /dev/null
+          curl -sS "https://paineliapy-xhsluoqusu5vmbc9dxjzxi.streamlit.app" > /dev/null
           echo "Visita realizada com sucesso às $(date)"
