@@ -2,15 +2,16 @@ name: Despertador do Robô IA 24h
 
 on:
   schedule:
-    # O robô vai "acordar" no início de cada hora (ex: 13:00, 14:00, 15:00...)
-    - cron: '0 * * * *'
-  workflow_dispatch: # Permite que você rode manualmente se quiser testar
+    - cron: '0 * * * *'      # Acorda a cada 1 hora para sinais
+    - cron: '50 23 * * *'    # Acorda às 23:50 para o Relatório Diário
+  workflow_dispatch: 
 
 jobs:
   visitar_painel:
     runs-on: ubuntu-latest
     steps:
-      - name: Acessando o Painel via Nuvem
+      - name: Despertar Forçado do Servidor
         run: |
-          curl -sS "https://paineliapy-xhsluoqusu5vmbc9dxjzxi.streamlit.app" > /dev/null
-          echo "Visita realizada com sucesso às $(date)"
+          # Usamos o comando 'wget' com um 'User-Agent' para o servidor pensar que é uma pessoa
+          wget --user-agent="Mozilla/5.0" --quiet --tries=3 --timeout=20 "https://paineliapy-xhsluoqusu5vmbc9dxjzxi.streamlit.app" -O /dev/null
+          echo "Visita de despertar realizada com sucesso!"
