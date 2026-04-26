@@ -405,19 +405,32 @@ if check_password():
     st.sidebar.progress(min(st.session_state.consultas / 100, 1.0))
     st.sidebar.write(f"💳 Créditos Hoje: **{st.session_state.consultas}/100**")
     st.sidebar.caption("Ligas de Ouro ativadas para proteção de créditos.")
-    # --- STATUS DE CONEXÃO ---
+    # --- STATUS DE CONEXÃO (UPGRADE) ---
     st.sidebar.markdown("---")
     st.sidebar.subheader("📡 Status do Sistema")
+    
+    col_status_tg, col_status_api = st.sidebar.columns(2)
+    
+    # Monitor do Telegram
     try:
-        # Tenta uma chamada simples para a API do Telegram para checar o Token
         url_teste = f"https://api.telegram.org/bot{TOKEN_TELEGRAM}/getMe"
-        resposta = requests.get(url_teste, timeout=5)
-        if resposta.status_code == 200:
-            st.sidebar.success("🟢 Telegram: Conectado")
+        if requests.get(url_teste, timeout=5).status_code == 200:
+            col_status_tg.success("🟢 Telegram")
         else:
-            st.sidebar.error("🔴 Telegram: Erro de Token")
+            col_status_tg.error("🔴 Telegram")
     except:
-        st.sidebar.warning("🟡 Telegram: Falha de Rede")
+        col_status_tg.warning("🟡 Telegram")
+
+    # Monitor da API de Futebol (NOVO!)
+    try:
+        url_api = "https://v3.football.api-sports.io/status"
+        res_api = requests.get(url_api, headers={'x-apisports-key': API_KEY}, timeout=5)
+        if res_api.status_code == 200:
+            col_status_api.success("🟢 API Futebol")
+        else:
+            col_status_api.error("🔴 API Futebol")
+    except:
+        col_status_api.warning("🟡 API Futebol")
     if modo_auto:
         st.sidebar.success("🤖 BOT ATIVO: Trabalhando sozinho via nuvem.")
         piloto_automatico = True 
