@@ -499,21 +499,23 @@ if check_password():
     # ==========================================
     st.title("👑 PAINEL IA SUPREMA - VISÃO SUPER-HUMANA")    
     
-# --- DASHBOARD DE ESTATÍSTICAS (VERSÃO CORRIGIDA) ---
+# --- DASHBOARD DE ESTATÍSTICAS (VERSÃO BLINDADA) ---
     try:
         url_planilha = "https://docs.google.com/spreadsheets/d/1Y4D4t2svOeT24vnKcWnzDcwz7tPyRvkeDP8sSm_xPkQ/edit?usp=sharing"
         df_historico = conn.read(spreadsheet=url_planilha)
         
         if not df_historico.empty:
-            st.subheader("📊 Performance em Tempo Real")
-            # Ajuste de nomes de colunas para bater com o seu log
+            # Garante que a coluna de resultado seja tratada como texto para não dar erro
             col_res = 'Resultado' if 'Resultado' in df_historico.columns else 'Res.'
-            
+            df_historico[col_res] = df_historico[col_res].astype(str).fillna("")
+
+            st.subheader("📊 Performance em Tempo Real")
             c1, c2, c3 = st.columns(3)
             c1.metric("Total de Sinais", len(df_historico))
             
-            greens = len(df_historico[df_historico[col_res].str.contains('GANHA|GREEN', na=False, case=False)])
-            reds = len(df_historico[df_historico[col_res].str.contains('PERDIDA|RED', na=False, case=False)])
+            # Contagem segura de Greens e Reds
+            greens = len(df_historico[df_historico[col_res].str.contains('GANHA|GREEN', case=False, na=False)])
+            reds = len(df_historico[df_historico[col_res].str.contains('PERDIDA|RED', case=False, na=False)])
             
             c2.metric("Greens ✅", greens)
             c3.metric("Reds ❌", reds)
@@ -527,8 +529,8 @@ if check_password():
             st.divider()
             st.header("🏟️ Apostas Aguardando Resultado")
             
-            # Filtra o que está sem resultado (Pendente)
-            df_pendentes = df_historico[df_historico[col_res].isna() | (df_historico[col_res] == "")]
+            # Filtra o que está pendente (sem GANHA/GREEN/PERDIDA/RED)
+            df_pendentes = df_historico[~df_historico[col_res].str.contains('GANHA|GREEN|PERDIDA|RED', case=False, na=False)]
             
             if not df_pendentes.empty:
                 for _, jogo in df_pendentes.iterrows():
@@ -539,7 +541,7 @@ if check_password():
             else:
                 st.info("Nenhuma aposta ativa no momento. O robô está monitorando o mercado!")
     except Exception as e:
-        st.error(f"Erro ao carregar dados: {e}")
+        st.info("Aguardando os primeiros dados da planilha para gerar os gráficos...")
     # ⚽💰 Gráfico Superior de Título (Troféu VIP e Bola Estáveis)
     st.markdown(
         """
