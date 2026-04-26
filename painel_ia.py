@@ -152,7 +152,7 @@ if check_password():
         
         if not dados_liga:
             add_log(f"📭 Tabela VAZIA na API (Liga {id_liga}, Temp {temporada})")
-            return 1.6, temp_usada 
+            return 1.8, temp_usada 
             
         try:
             todas_as_tabelas = dados_liga[0]['league']['standings']
