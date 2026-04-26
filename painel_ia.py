@@ -469,13 +469,22 @@ if check_password():
         unsafe_allow_html=True
     )
     # ==========================================
-    # 📊 CORPO PRINCIPAL DO PAINEL
+    # 📊 CORPO PRINCIPAL (APENAS ESTE BLOCO)
     # ==========================================
-    st.title("👑 PAINEL IA SUPREMA - VISÃO SUPER-HUMANA")    
+    st.title("👑 PAINEL IA SUPREMA - VISÃO SUPER-HUMANA")
+    
+    # URL da planilha definida antes de qualquer uso
     url_planilha = "https://docs.google.com/spreadsheets/d/1Y4D4t2svOeT24vnKcWnzDcwz7tPyRvkeDP8sSm_xPkQ/edit?usp=sharing"
 
+    # --- BOTÃO DE RESET (A CHAVE PARA OS CARDS APARECEREM) ---
+    st.sidebar.markdown("---")
+    if st.sidebar.button("🚨 RESETAR MEMÓRIA E GRAVAR CARDS", use_container_width=True):
+        st.session_state.sinais_enviados = [] 
+        st.cache_data.clear()
+        st.success("Memória limpa! Clique em 'Forçar Busca' agora.")
+
     try:
-        # Força a leitura da planilha sem cache (ttl=0)
+        # Conexão com a planilha
         conn = st.connection("gsheets", type=GSheetsConnection)
         df_historico = conn.read(spreadsheet=url_planilha, ttl=0)
         
@@ -483,64 +492,44 @@ if check_password():
             col_res = 'Resultado' if 'Resultado' in df_historico.columns else 'Res.'
             df_historico[col_res] = df_historico[col_res].astype(str).fillna("")
 
-            # MÉTRICAS DE TOPO
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Total de Sinais Gravados", len(df_historico))
-            greens = len(df_historico[df_historico[col_res].str.contains('GANHA|GREEN', case=False)])
-            reds = len(df_historico[df_historico[col_res].str.contains('PERDIDA|RED', case=False)])
-            c2.metric("Greens ✅", greens)
-            c3.metric("Reds ❌", reds)
-
-            # CARDS DE APOSTAS PENDENTES
-            st.header("🏟️ Apostas Aguardando Resultado")
-            df_pendentes = df_historico[~df_historico[col_res].str.contains('GANHA|GREEN|PERDIDA|RED', case=False)]
-            
-            if not df_pendentes.empty:
-                for _, jogo in df_pendentes.iterrows():
-                    with st.expander(f"⏳ {jogo['Casa']} x {jogo['Fora']}", expanded=True):
-                        st.write(f"**Entrada:** {jogo['Previsao_IA']} | **Data:** {jogo['Data']}")
-            else:
-                st.info("Nenhuma aposta pendente na planilha. O robô está monitorando!")
-        else:
-            st.info("Planilha vazia no Google Sheets. Use o botão de Reset e Forçar Busca para gravar os sinais atuais.")
-    except Exception as e:
-        st.error(f"Erro ao carregar dados da planilha: {e}")
-
-    # --- DASHBOARD DE ESTATÍSTICAS ---
-    try:
-        conn = st.connection("gsheets", type=GSheetsConnection)
-        df_historico = conn.read(spreadsheet=url_planilha, ttl=0) # ttl=0 força leitura real
-        
-        if not df_historico.empty:
-            col_res = 'Resultado' if 'Resultado' in df_historico.columns else 'Res.'
-            df_historico[col_res] = df_historico[col_res].astype(str).fillna("")
-
+            # 1. MÉTRICAS DE PERFORMANCE
             st.subheader("📊 Performance em Tempo Real")
             c1, c2, c3 = st.columns(3)
-            c1.metric("Total de Sinais Gravados", len(df_historico))
+            c1.metric("Total de Sinais", len(df_historico))
             
             greens = len(df_historico[df_historico[col_res].str.contains('GANHA|GREEN', case=False)])
             reds = len(df_historico[df_historico[col_res].str.contains('PERDIDA|RED', case=False)])
             c2.metric("Greens ✅", greens)
             c3.metric("Reds ❌", reds)
 
+            # 2. GRÁFICO DE HISTÓRICO
+            st.markdown("### 📈 Histórico de Sinais Enviados")
+            df_historico['Data_Grafico'] = pd.to_datetime(df_historico['Data']).dt.date
+            sinais_dia = df_historico.groupby('Data_Grafico').size()
+            st.bar_chart(sinais_dia)
+
+            # 3. CARDS DE APOSTAS PENDENTES (O que você quer ver)
+            st.divider()
             st.header("🏟️ Apostas Aguardando Resultado")
             df_pendentes = df_historico[~df_historico[col_res].str.contains('GANHA|GREEN|PERDIDA|RED', case=False)]
             
             if not df_pendentes.empty:
                 for _, jogo in df_pendentes.iterrows():
                     with st.expander(f"⏳ {jogo['Casa']} x {jogo['Fora']}", expanded=True):
-                        st.write(f"**Entrada:** {jogo['Previsao_IA']} | **Data:** {jogo['Data']}")
+                        ca, cb = st.columns(2)
+                        ca.write(f"**Entrada:** {jogo.get('Previsao_IA', 'Over 1.5')}")
+                        cb.write(f"**Data:** {jogo.get('Data', 'Hoje')}")
             else:
-                st.info("Nenhuma aposta pendente na planilha. O robô está monitorando!")
+                st.info("Nenhuma aposta ativa gravada na planilha. Clique em 'Forçar Busca' para atualizar.")
         else:
-            st.info("Planilha vazia no Google Sheets. O robô aguarda o próximo sinal.")
+            st.info("Planilha vazia. O robô aguarda o próximo sinal para gravar.")
+
     except Exception as e:
-        st.error(f"Erro ao carregar dados: {e}")
+        st.error(f"Erro ao carregar dashboard: {e}")
 
     # --- BOTÃO DE BUSCA E LOGS ---
     st.markdown("---")
-    if st.button("🔄 Forçar Busca de Jogos (Limpar Cache)"):
+    if st.button("🔄 Forçar Busca de Jogos (Limpar Cache)", type="primary"):
         st.cache_data.clear()
         st.rerun()
 
