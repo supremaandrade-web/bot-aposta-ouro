@@ -560,6 +560,9 @@ if check_password():
                     if confianca_vit_casa > 75 and id_sinal_vit_c not in st.session_state.sinais_enviados:
                         enviar_sinal_vip("PRE_MATCH", casa, fora, confianca_vit_casa, "Vitória Casa", valor_entrada, horario_jogo)
                         st.session_state.sinais_enviados.append(id_sinal_vit_c)
+
+                        registrar_resultado({'casa': casa, 'fora': fora, 'previsao': "1.5 Gols", 'odd': 1.85}, "PENDENTE", 0)
+                        
                         st.session_state.aposta_pendente.append({'id': id_jogo, 'casa': casa, 'fora': fora, 'previsao': "Vitória Casa", 'valor': valor_entrada, 'odd': 1.85, 'data_api': data_api})
                         add_log(f"🚀 SINAL VITÓRIA CASA: {casa} ({confianca_vit_casa}%) | Temp: {ano_base}")
                         
@@ -568,6 +571,9 @@ if check_password():
                     if confianca_vit_fora > 75 and id_sinal_vit_f not in st.session_state.sinais_enviados:
                         enviar_sinal_vip("PRE_MATCH", casa, fora, confianca_vit_fora, "Vitória Visitante", valor_entrada, horario_jogo)
                         st.session_state.sinais_enviados.append(id_sinal_vit_f)
+
+                        registrar_resultado({'casa': casa, 'fora': fora, 'previsao': "1.5 Gols", 'odd': 1.85}, "PENDENTE", 0)
+                        
                         st.session_state.aposta_pendente.append({'id': id_jogo, 'casa': casa, 'fora': fora, 'previsao': "Vitória Visitante", 'valor': valor_entrada, 'odd': 1.85, 'data_api': data_api})
                         add_log(f"🚀 SINAL VITÓRIA VISITANTE: {fora} ({confianca_vit_fora}%) | Temp: {ano_base}")
                         
@@ -588,6 +594,9 @@ if check_password():
                     if confianca_over25 > 70 and id_sinal_over25 not in st.session_state.sinais_enviados:
                         enviar_sinal_vip("PRE_MATCH", casa, fora, confianca_over25, "2.5 Gols", valor_entrada, horario_jogo, odd="2.00") # Odd sugerida maior
                         st.session_state.sinais_enviados.append(id_sinal_over25)
+
+                        registrar_resultado({'casa': casa, 'fora': fora, 'previsao': "2.5 Gols", 'odd': 2.00}, "PENDENTE", 0)
+                        
                         st.session_state.aposta_pendente.append({'id': id_jogo, 'casa': casa, 'fora': fora, 'previsao': "2.5 Gols", 'valor': valor_entrada, 'odd': 2.00, 'data_api': data_api})
                         add_log(f"🔥 SINAL O2.5: {casa} x {fora} ({confianca_over25}%) | Temp: {ano_base}")
                         
