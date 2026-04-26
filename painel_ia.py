@@ -499,19 +499,22 @@ if check_password():
     # ==========================================
     st.title("👑 PAINEL IA SUPREMA - VISÃO SUPER-HUMANA")    
     
-    # --- DASHBOARD DE ESTATÍSTICAS ---
+# --- DASHBOARD DE ESTATÍSTICAS (VERSÃO CORRIGIDA) ---
     try:
         url_planilha = "https://docs.google.com/spreadsheets/d/1Y4D4t2svOeT24vnKcWnzDcwz7tPyRvkeDP8sSm_xPkQ/edit?usp=sharing"
         df_historico = conn.read(spreadsheet=url_planilha)
         
         if not df_historico.empty:
             st.subheader("📊 Performance em Tempo Real")
+            # Ajuste de nomes de colunas para bater com o seu log
+            col_res = 'Resultado' if 'Resultado' in df_historico.columns else 'Res.'
+            
             c1, c2, c3 = st.columns(3)
             c1.metric("Total de Sinais", len(df_historico))
             
-            # Filtro seguro para Greens e Reds
-            greens = len(df_historico[df_historico['Resultado'] == 'GREEN'])
-            reds = len(df_historico[df_historico['Resultado'] == 'RED'])
+            greens = len(df_historico[df_historico[col_res].str.contains('GANHA|GREEN', na=False, case=False)])
+            reds = len(df_historico[df_historico[col_res].str.contains('PERDIDA|RED', na=False, case=False)])
+            
             c2.metric("Greens ✅", greens)
             c3.metric("Reds ❌", reds)
             
@@ -519,31 +522,24 @@ if check_password():
             df_historico['Data_Grafico'] = pd.to_datetime(df_historico['Data']).dt.date
             sinais_dia = df_historico.groupby('Data_Grafico').size()
             st.bar_chart(sinais_dia)
-    except Exception as e:
-        st.info("📊 Os gráficos aparecerão assim que os sinais forem salvos no Sheets.")
 
-    # --- 🏟️ JOGOS EM MONITORAMENTO (AO VIVO) ---
-    st.divider()
-    st.header("🏟️ Apostas Aguardando Resultado")
-    
-    try:
-        # Filtra na planilha apenas o que não tem resultado ainda
-        df_pendentes = df_historico[df_historico['Resultado'].isna() | (df_historico['Resultado'] == "")]
-        
-        if not df_pendentes.empty:
-            for _, jogo in df_pendentes.iterrows():
-                with st.expander(f"⏳ {jogo['Casa']} x {jogo['Fora']}", expanded=True):
-                    col_a, col_b, col_c = st.columns(3)
-                    col_a.write(f"**Entrada:** {jogo['Previsao_IA']}")
-                    # Tratamento numérico para evitar erros visuais
-                    lucro_val = pd.to_numeric(jogo['Lucro'], errors='coerce')
-                    col_b.write(f"**Stake:** R$ {abs(lucro_val) if pd.notna(lucro_val) else '---'}")
-                    col_c.write(f"**Data:** {jogo['Data']}")
-                    st.caption("O robô removerá este card após processar o resultado.")
-        else:
-            st.info("Nenhuma aposta ativa no momento. O robô está buscando oportunidades!")
+            # --- 🏟️ MONITOR DE APOSTAS ATIVAS ---
+            st.divider()
+            st.header("🏟️ Apostas Aguardando Resultado")
+            
+            # Filtra o que está sem resultado (Pendente)
+            df_pendentes = df_historico[df_historico[col_res].isna() | (df_historico[col_res] == "")]
+            
+            if not df_pendentes.empty:
+                for _, jogo in df_pendentes.iterrows():
+                    with st.expander(f"⏳ {jogo.get('Casa', 'Time A')} x {jogo.get('Fora', 'Time B')}", expanded=True):
+                        ca, cb = st.columns(2)
+                        ca.write(f"**Entrada:** {jogo.get('Previsao_IA', 'Analisando...')}")
+                        cb.write(f"**Data:** {jogo.get('Data', '---')}")
+            else:
+                st.info("Nenhuma aposta ativa no momento. O robô está monitorando o mercado!")
     except Exception as e:
-        st.write("Aguardando registro de novos jogos...")
+        st.error(f"Erro ao carregar dados: {e}")
     # ⚽💰 Gráfico Superior de Título (Troféu VIP e Bola Estáveis)
     st.markdown(
         """
