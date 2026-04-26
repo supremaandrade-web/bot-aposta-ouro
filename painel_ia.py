@@ -298,25 +298,37 @@ if check_password():
     # ==========================================
     # 📡 CACHE E ECONOMIA DE API
     # ==========================================
-    @st.cache_data(ttl=3600 * 2) 
+    @st.cache_data(ttl=60) # Cache reduzido para 1 minuto no teste
     def buscar_jogos_do_dia_filtrados():
-        """Faz UMA requisição para pegar tudo, e filtra as Ligas de Ouro localmente (Não gasta crédito extra)."""
-        url = "https://v3.football.api-sports.io/fixtures"
-        hoje = datetime.now().strftime("%Y-%m-%d")
-        querystring = {"date": hoje, "timezone": "America/Sao_Paulo"}
-        headers = {'x-apisports-key': API_KEY}
-        
-        try:
-            resp = requests.get(url, headers=headers, params=querystring)
-            if resp.status_code == 200:
-                st.session_state.consultas += 1
-                todos_jogos = resp.json().get('response', [])
+    """🧪 MODO DE TESTE: Ignora filtros para forçar o consumo de créditos."""
+    url = "https://v3.football.api-sports.io/fixtures"
+    hoje = datetime.now().strftime("%Y-%m-%d")
+    querystring = {"date": hoje, "timezone": "America/Sao_Paulo"}
+    headers = {'x-apisports-key': API_KEY}
+    
+    try:
+        resp = requests.get(url, headers=headers, params=querystring)
+        if resp.status_code == 200:
+            st.session_state.consultas += 1 # Força o gasto de 1 crédito
+            todos_jogos = resp.json().get('response', [])
+            
+            # Pega os primeiros 3 jogos de qualquer liga para o teste
+            jogos_teste = todos_jogos[:3]
+            
+            for j in jogos_teste:
+                casa = j['teams']['home']['name']
+                fora = j['teams']['away']['name']
+                add_log(f"🧪 TESTE ATIVO: Analisando {casa} x {fora}")
                 
-                # Aplica o Filtro das Ligas de Ouro
-                jogos_ouro = [j for j in todos_jogos if j['league']['id'] in LIGAS_OURO]
-                return jogos_ouro
-        except: pass
-        return []
+                # Envio direto de teste para o Telegram
+                url_tg = f"https://api.telegram.org/bot{TOKEN_TELEGRAM}/sendMessage"
+                msg_teste = f"🧪 **TESTE DE CONEXÃO OK**\nO robô encontrou: {casa} x {fora}\nO sistema está respondendo!"
+                requests.post(url_tg, json={"chat_id": CHAT_ID, "text": msg_teste, "parse_mode": "Markdown"})
+                
+            return jogos_teste
+    except Exception as e:
+        add_log(f"❌ Erro no teste: {e}")
+    return []
     def enviar_resumo_diario():
         """Lê da Planilha Google e envia o fechamento financeiro para o Telegram."""
         try:
