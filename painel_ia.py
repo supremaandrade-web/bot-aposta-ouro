@@ -351,44 +351,36 @@ if check_password():
     # 🔎 AUDITOR AUTOMÁTICO DE RESULTADOS (LÓGICA POR DATA)
     # =========================================================
     def auditar_resultados_pendentes():
-       try:
+        try:
         url_planilha = "https://docs.google.com/spreadsheets/d/1Y4D4t2svOeT24vnKcWnzDcwz7tPyRvkeDP8sSm_xPkQ/edit?usp=sharing"
         df = conn.read(spreadsheet=url_planilha)
         
         if df is None or df.empty:
             return "Planilha vazia ou inacessível."
 
-        # Identifica a coluna de resultado (pode ser 'Resultado' ou 'Res.')
+        # Identifica a coluna de resultado
         col_res = 'Resultado' if 'Resultado' in df.columns else 'Res.'
         df[col_res] = df[col_res].astype(str).replace('nan', '').fillna('')
 
         agora = pd.Timestamp.now()
 
         for index, row in df.iterrows():
-            # 1. Pula se já tiver um resultado final
             status_atual = str(row[col_res]).upper()
             if any(x in status_atual for x in ['GREEN', 'RED', 'GANHA', 'PERDIDA']):
                 continue
             
-            # 2. Pula se não tiver dados básicos do jogo
             if not row.get('Casa') or not row.get('Fora'):
                 continue
 
-            # 3. Lógica de Auditoria: Se a data do jogo for hoje ou antes, ele tenta auditar
             try:
                 data_jogo = pd.to_datetime(row['Data'], dayfirst=True, errors='coerce')
-                
-                # Se a data é válida e é hoje ou passada, enviamos para auditoria
                 if data_jogo is not pd.NaT and data_jogo.date() <= agora.date():
-                    # Esta função abaixo busca o placar real e avisa no Telegram
-                    # Certifique-se que a função 'processar_vitoria_derrota' existe abaixo no seu arquivo
                     processar_vitoria_derrota(row, index, col_res)
             except:
                 continue
 
-        return "Auditoria concluída com sucesso."
+        return "Auditoria concluída."
     except Exception as e:
-        st.sidebar.error(f"Erro na auditoria: {e}")
         return f"Erro: {e}"
     
     # ==========================================
