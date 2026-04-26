@@ -474,14 +474,15 @@ if check_password():
     # ==========================================
     st.title("👑 PAINEL IA SUPREMA - VISÃO SUPER-HUMANA")    
     
-# --- DASHBOARD DE ESTATÍSTICAS (VERSÃO BLINDADA) ---
+    # URL definida ANTES de ser usada (Evita o NameError)
     url_planilha = "https://docs.google.com/spreadsheets/d/1Y4D4t2svOeT24vnKcWnzDcwz7tPyRvkeDP8sSm_xPkQ/edit?usp=sharing"
-    conn = st.connection("gsheets", type=GSheetsConnection)
+
     try:
-        df_historico = conn.read(spreadsheet=url_planilha)
+        # Conexão com TTL=0 para ler a planilha em tempo real
+        conn = st.connection("gsheets", type=GSheetsConnection)
+        df_historico = conn.read(spreadsheet=url_planilha, ttl=0)
         
         if not df_historico.empty:
-            # Garante que a coluna de resultado seja tratada como texto para não dar erro
             col_res = 'Resultado' if 'Resultado' in df_historico.columns else 'Res.'
             df_historico[col_res] = df_historico[col_res].astype(str).fillna("")
 
@@ -489,7 +490,6 @@ if check_password():
             c1, c2, c3 = st.columns(3)
             c1.metric("Total de Sinais", len(df_historico))
             
-            # Contagem segura de Greens e Reds
             greens = len(df_historico[df_historico[col_res].str.contains('GANHA|GREEN', case=False, na=False)])
             reds = len(df_historico[df_historico[col_res].str.contains('PERDIDA|RED', case=False, na=False)])
             
@@ -501,23 +501,21 @@ if check_password():
             sinais_dia = df_historico.groupby('Data_Grafico').size()
             st.bar_chart(sinais_dia)
 
-            # --- 🏟️ MONITOR DE APOSTAS ATIVAS ---
             st.divider()
             st.header("🏟️ Apostas Aguardando Resultado")
             
-            # Filtra o que está pendente (sem GANHA/GREEN/PERDIDA/RED)
             df_pendentes = df_historico[~df_historico[col_res].str.contains('GANHA|GREEN|PERDIDA|RED', case=False, na=False)]
             
             if not df_pendentes.empty:
                 for _, jogo in df_pendentes.iterrows():
-                    with st.expander(f"⏳ {jogo.get('Casa', 'Time A')} x {jogo.get('Fora', 'Time B')}", expanded=True):
+                    with st.expander(f"⏳ {jogo.get('Casa')} x {jogo.get('Fora')}", expanded=True):
                         ca, cb = st.columns(2)
-                        ca.write(f"**Entrada:** {jogo.get('Previsao_IA', 'Analisando...')}")
-                        cb.write(f"**Data:** {jogo.get('Data', '---')}")
+                        ca.write(f"**Entrada:** {jogo.get('Previsao_IA')}")
+                        cb.write(f"**Data:** {jogo.get('Data')}")
             else:
-                st.info("Nenhuma aposta ativa no momento. O robô está monitorando o mercado!")
+                st.info("Nenhuma aposta ativa gravada na planilha. O robô está monitorando!")
     except Exception as e:
-        st.info("Aguardando os primeiros dados da planilha para gerar os gráficos...")
+        st.error(f"Erro de conexão com os dados: {e}")
     # ⚽💰 Gráfico Superior de Título (Troféu VIP e Bola Estáveis)
     st.markdown(
         """
