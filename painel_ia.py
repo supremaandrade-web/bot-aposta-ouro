@@ -347,89 +347,49 @@ if check_password():
         except Exception as e:
             st.error(f"Erro ao gerar relatório da nuvem: {e}")
     
-    
-    # ==========================================
-    # 🔄 AUDITOR AUTOMÁTICO DE RESULTADOS (COM RELÓGIO DE 110 MIN)
-    # ==========================================
+    # =========================================================
+    # 🔎 AUDITOR AUTOMÁTICO DE RESULTADOS (LÓGICA POR DATA)
+    # =========================================================
     def auditar_resultados_pendentes():
-        from datetime import datetime, timezone, timedelta
-        apostas_restantes = []
-        url = "https://v3.football.api-sports.io/fixtures"
-        headers = {'x-apisports-key': API_KEY}
+       try:
+        url_planilha = "https://docs.google.com/spreadsheets/d/1Y4D4t2svOeT24vnKcWnzDcwz7tPyRvkeDP8sSm_xPkQ/edit?usp=sharing"
+        df = conn.read(spreadsheet=url_planilha)
         
-        agora = datetime.now(timezone.utc)
-        
-        for aposta in st.session_state.aposta_pendente:
+        if df is None or df.empty:
+            return "Planilha vazia ou inacessível."
+
+        # Identifica a coluna de resultado (pode ser 'Resultado' ou 'Res.')
+        col_res = 'Resultado' if 'Resultado' in df.columns else 'Res.'
+        df[col_res] = df[col_res].astype(str).replace('nan', '').fillna('')
+
+        agora = pd.Timestamp.now()
+
+        for index, row in df.iterrows():
+            # 1. Pula se já tiver um resultado final
+            status_atual = str(row[col_res]).upper()
+            if any(x in status_atual for x in ['GREEN', 'RED', 'GANHA', 'PERDIDA']):
+                continue
+            
+            # 2. Pula se não tiver dados básicos do jogo
+            if not row.get('Casa') or not row.get('Fora'):
+                continue
+
+            # 3. Lógica de Auditoria: Se a data do jogo for hoje ou antes, ele tenta auditar
             try:
-                # ⏰ O RELÓGIO INTELIGENTE DA API
-                if 'data_api' in aposta:
-                    hora_inicio = datetime.fromisoformat(aposta['data_api'])
-                    if hora_inicio.tzinfo is None:
-                        hora_inicio = hora_inicio.replace(tzinfo=timezone.utc)
-                    
-                    # Se ainda não passou 110 minutos do início, segura a aposta e NÃO gasta crédito!
-                    if agora < hora_inicio + timedelta(minutes=110):
-                        apostas_restantes.append(aposta)
-                        continue 
-                # ----------------------------------------------------
-    
-                # Consulta a API para ver como terminou o jogo (só chega aqui se deu a hora)
-                resp = requests.get(url, headers=headers, params={"id": aposta['id']})
-                if resp.status_code == 200:
-                    st.session_state.consultas += 1 # Gasta 1 crédito por checagem
-                    dados_jogo = resp.json().get('response', [])[0]
-                    status = dados_jogo['fixture']['status']['short']
-                    
-                    # 'FT' (Full Time), 'AET' (Prorrogação), 'PEN' (Pênaltis)
-                    if status in ['FT', 'AET', 'PEN']:
-                        gols_casa = dados_jogo['goals']['home']
-                        gols_fora = dados_jogo['goals']['away']
-                        total_gols = gols_casa + gols_fora
-                        
-                        resultado_aposta = "PERDIDA" # Assume loss por padrão
-                        
-                        # Verifica se deu Green em Match Odds (Vitória Casa)
-                        if "Vitória Casa" in aposta['previsao'] and gols_casa > gols_fora:
-                            resultado_aposta = "GANHA"
-                        
-                        # Verifica se deu Green em Over 1.5 Gols
-                        elif "1.5 Gols" in aposta['previsao'] and total_gols >= 2:
-                            resultado_aposta = "GANHA"
-                            
-                        # Verifica se deu Green em Over 2.5 Gols
-                        elif "2.5 Gols" in aposta['previsao'] and total_gols >= 3:
-                            resultado_aposta = "GANHA"
-                        
-                        # -----------------------------------------
-                        # 📢 ENVIA AVISO PARA O TELEGRAM E APLICA MARTINGALE
-                        # -----------------------------------------
-                        if resultado_aposta == "GANHA":
-                            registrar_resultado(aposta, "GREEN", aposta['valor'] * 0.85) # Salva na Memória
-                            st.session_state.multiplier = 1.0 # Reseta o multiplicador
-                            msg_telegram = f"✅ **GREEN CONFIRMADO!** ✅\n\n⚽ {aposta['casa']} {gols_casa} x {gols_fora} {aposta['fora']}\n🎯 Mercado: {aposta['previsao']}"
-                            st.markdown('<audio autoplay><source src="https://www.soundjay.com/misc/sounds/cash-register-01.mp3" type="audio/mpeg"></audio>', unsafe_allow_html=True)
-                            
-                        else:
-                            registrar_resultado(aposta, "RED", -aposta['valor']) # Salva o Loss
-                            st.session_state.multiplier *= 2.0 # Martingale
-                            msg_telegram = f"❌ **RED REGISTRADO** ❌\n\n⚽ {aposta['casa']} {gols_casa} x {gols_fora} {aposta['fora']}\n🎯 Mercado: {aposta['previsao']}"
-                        
-                        url_tg = f"https://api.telegram.org/bot{TOKEN_TELEGRAM}/sendMessage"
-                        requests.post(url_tg, json={"chat_id": CHAT_ID, "text": msg_telegram, "parse_mode": "Markdown"})
-                        
-                        add_log(f"Auditoria: {aposta['casa']} x {aposta['fora']} | Placar: {gols_casa}-{gols_fora} | Res: {resultado_aposta}")
-                        
-                    else:
-                        # Jogo ainda está rolando (caso os 110 min não tenham sido suficientes, ex: jogo paralisado)
-                        apostas_restantes.append(aposta)
-                else:
-                    apostas_restantes.append(aposta)
-                    
-            except Exception as e:
-                apostas_restantes.append(aposta)
-    
-        st.session_state.aposta_pendente = apostas_restantes
-        return "Auditoria concluída."
+                data_jogo = pd.to_datetime(row['Data'], dayfirst=True, errors='coerce')
+                
+                # Se a data é válida e é hoje ou passada, enviamos para auditoria
+                if data_jogo is not pd.NaT and data_jogo.date() <= agora.date():
+                    # Esta função abaixo busca o placar real e avisa no Telegram
+                    # Certifique-se que a função 'processar_vitoria_derrota' existe abaixo no seu arquivo
+                    processar_vitoria_derrota(row, index, col_res)
+            except:
+                continue
+
+        return "Auditoria concluída com sucesso."
+    except Exception as e:
+        st.sidebar.error(f"Erro na auditoria: {e}")
+        return f"Erro: {e}"
     
     # ==========================================
     # 🖥️ INTERFACE E CONTROLES LATERAIS
