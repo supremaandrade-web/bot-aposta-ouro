@@ -472,186 +472,75 @@ if check_password():
         unsafe_allow_html=True
     )
     # ==========================================
-    # 📊 CORPO PRINCIPAL E STATUS (VERSÃO ÚNICA)
+    # 📊 CORPO PRINCIPAL DO PAINEL (LINHA 470+)
     # ==========================================
     st.title("👑 PAINEL IA SUPREMA - VISÃO SUPER-HUMANA")    
+    
+    # URL da planilha definida antes de qualquer uso
     url_planilha = "https://docs.google.com/spreadsheets/d/1Y4D4t2svOeT24vnKcWnzDcwz7tPyRvkeDP8sSm_xPkQ/edit?usp=sharing"
 
+    # --- MONITOR DE STATUS ÚNICO ---
     st.sidebar.markdown("---")
     st.sidebar.subheader("📡 Status do Sistema")
-    col_status_tg, col_status_api = st.sidebar.columns(2)
+    col_st_tg, col_st_api = st.sidebar.columns(2)
     
-    # Teste Telegram
     try:
         if requests.get(f"https://api.telegram.org/bot{TOKEN_TELEGRAM}/getMe", timeout=5).status_code == 200:
-            col_status_tg.success("🟢 Telegram")
-    except: col_status_tg.error("🔴 Telegram")
+            col_st_tg.success("🟢 Telegram")
+    except: col_st_tg.error("🔴 Telegram")
 
-    # Teste API (Corrigido)
     try:
         if requests.get("https://v3.football.api-sports.io/status", headers={'x-apisports-key': API_KEY}, timeout=5).status_code == 200:
-            col_status_api.success("🟢 API Futebol")
-    except: col_status_api.error("🔴 API Futebol")
+            col_st_api.success("🟢 API Futebol")
+    except: col_st_api.error("🔴 API Futebol")
 
-    # --- BOTÃO DE RESET TOTAL (USE ISSO PARA OS CARDS APARECEREM) ---
-    if st.button("🚨 RESETAR MEMÓRIA E REGRAVAR PLANILHA"):
-        st.session_state.sinais_enviados = [] # Limpa a memória de sinais já mandados
-        st.cache_data.clear() # Limpa o cache de busca
-        st.success("Memória limpa! Agora clique em 'Forçar Busca de Jogos' abaixo.")
+    # --- BOTÃO DE RESET (ESSENCIAL PARA OS CARDS VOLTAREM) ---
+    st.sidebar.markdown("---")
+    if st.sidebar.button("🚨 RESETAR MEMÓRIA E GRAVAR CARDS"):
+        st.session_state.sinais_enviados = []
+        st.cache_data.clear()
+        st.success("Memória limpa! Clique em 'Forçar Busca' no painel principal.")
 
     # --- DASHBOARD DE ESTATÍSTICAS ---
     try:
         conn = st.connection("gsheets", type=GSheetsConnection)
-        df_historico = conn.read(spreadsheet=url_planilha, ttl=0)
+        df_historico = conn.read(spreadsheet=url_planilha, ttl=0) # ttl=0 força leitura real
         
         if not df_historico.empty:
-            # (Restante do código de performance e gráficos...)
-            st.metric("Total de Sinais", len(df_historico))
+            col_res = 'Resultado' if 'Resultado' in df_historico.columns else 'Res.'
+            df_historico[col_res] = df_historico[col_res].astype(str).fillna("")
+
+            st.subheader("📊 Performance em Tempo Real")
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Total de Sinais Gravados", len(df_historico))
+            
+            greens = len(df_historico[df_historico[col_res].str.contains('GANHA|GREEN', case=False)])
+            reds = len(df_historico[df_historico[col_res].str.contains('PERDIDA|RED', case=False)])
+            c2.metric("Greens ✅", greens)
+            c3.metric("Reds ❌", reds)
+
+            st.header("🏟️ Apostas Aguardando Resultado")
+            df_pendentes = df_historico[~df_historico[col_res].str.contains('GANHA|GREEN|PERDIDA|RED', case=False)]
+            
+            if not df_pendentes.empty:
+                for _, jogo in df_pendentes.iterrows():
+                    with st.expander(f"⏳ {jogo['Casa']} x {jogo['Fora']}", expanded=True):
+                        st.write(f"**Entrada:** {jogo['Previsao_IA']} | **Data:** {jogo['Data']}")
+            else:
+                st.info("Nenhuma aposta pendente na planilha. O robô está monitorando!")
         else:
-            st.info("Planilha vazia no Google Sheets. O robô aguarda o próximo sinal para gravar.")
+            st.info("Planilha vazia no Google Sheets. O robô aguarda o próximo sinal.")
     except Exception as e:
-        st.error(f"Erro de conexão: {e}")
-    # ⚽💰 Gráfico Superior de Título (Troféu VIP e Bola Estáveis)
-    st.markdown(
-        """
-        <div style="text-align: center; margin-bottom: 20px;">
-            <img src="https://cdn-icons-png.flaticon.com/512/3112/3112946.png" width="80" style="margin-right: 15px; vertical-align: middle;">
-            <img src="https://cdn-icons-png.flaticon.com/512/188/188864.png" width="70" style="vertical-align: middle;">
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    col_pre, col_live = st.columns(2)
-    
-    with col_pre:
-        st.subheader("📅 Melhores Oportunidades do Dia (Pré-Jogo)")
-        jogos_dia = buscar_jogos_do_dia_filtrados()
-        
-        if jogos_dia:
-            st.success(f"Encontrados {len(jogos_dia)} jogos em Ligas de Ouro hoje.")
-            # O robô entra na análise SE o piloto automático estiver ligado OU SE você clicar no botão manual
-            if piloto_automatico or st.button("🧠 Aplicar Poisson (Modo Manual)"):
-                for j in jogos_dia: # Analisa TODOS os jogos encontrados na varredura
-                    casa = j['teams']['home']['name']
-                    fora = j['teams']['away']['name']
-                    id_jogo = j['fixture']['id']
-                    id_liga = j['league']['id']
-                    temporada = j['league']['season']
-                    
-                    # ⏰ Pegando o horário da API e formatando para HH:MM
-                    data_api = j['fixture']['date']
-                    try:
-                        horario_jogo = datetime.fromisoformat(data_api).strftime('%H:%M')
-                    except:
-                        horario_jogo = data_api[11:16]
-                    
-                    # 1. Pega as médias REAIS e o ANO utilizado
-                    media_c, ano_base = obter_media_gols_real(id_liga, temporada, casa)
-                    media_f, _ = obter_media_gols_real(id_liga, temporada, fora)
-                    
-                    # 2. Recebe as QUATRO previsões da IA
-                    confianca_vit_casa, confianca_vit_fora, confianca_over15, confianca_over25 = analisar_jogo_matematicamente_real(media_c, media_f)
-                    valor_entrada = round(stake_base * st.session_state.multiplier, 2)
-                    
-                    # 3. FILTRO 1: Match Odds (Vitória Casa) > 75%
-                    id_sinal_vit_c = f"{id_jogo}_VC"
-                    if confianca_vit_casa > 75 and id_sinal_vit_c not in st.session_state.sinais_enviados:
-                        enviar_sinal_vip("PRE_MATCH", casa, fora, confianca_vit_casa, "Vitória Casa", valor_entrada, horario_jogo)
-                        st.session_state.sinais_enviados.append(id_sinal_vit_c)
-                        st.session_state.aposta_pendente.append({'id': id_jogo, 'casa': casa, 'fora': fora, 'previsao': "Vitória Casa", 'valor': valor_entrada, 'odd': 1.85, 'data_api': data_api})
-                        add_log(f"🚀 SINAL VITÓRIA CASA: {casa} ({confianca_vit_casa}%) | Temp: {ano_base}")
-                        
-                    # 4. FILTRO 2: Match Odds (Vitória Visitante) > 75%
-                    id_sinal_vit_f = f"{id_jogo}_VF"
-                    if confianca_vit_fora > 75 and id_sinal_vit_f not in st.session_state.sinais_enviados:
-                        enviar_sinal_vip("PRE_MATCH", casa, fora, confianca_vit_fora, "Vitória Visitante", valor_entrada, horario_jogo)
-                        st.session_state.sinais_enviados.append(id_sinal_vit_f)
-                        st.session_state.aposta_pendente.append({'id': id_jogo, 'casa': casa, 'fora': fora, 'previsao': "Vitória Visitante", 'valor': valor_entrada, 'odd': 1.85, 'data_api': data_api})
-                        add_log(f"🚀 SINAL VITÓRIA VISITANTE: {fora} ({confianca_vit_fora}%) | Temp: {ano_base}")
-                        
-                    # 5. FILTRO 3: Over 1.5 Gols > 80%
-                    id_sinal_over15 = f"{id_jogo}_O15"
-                    if confianca_over15 > 80 and id_sinal_over15 not in st.session_state.sinais_enviados:
-                        enviar_sinal_vip("PRE_MATCH", casa, fora, confianca_over15, "1.5 Gols", valor_entrada, horario_jogo)
-                        st.session_state.sinais_enviados.append(id_sinal_over15)
-                        st.session_state.aposta_pendente.append({'id': id_jogo, 'casa': casa, 'fora': fora, 'previsao': "1.5 Gols", 'valor': valor_entrada, 'odd': 1.85, 'data_api': data_api})
-                        add_log(f"⚽ SINAL O1.5: {casa} x {fora} ({confianca_over15}%) | Temp: {ano_base}")
-    
-                    # 6. FILTRO 4: Over 2.5 Gols > 70% (NOVO! Exige um pouco menos de % porque é mais difícil acontecer)
-                    id_sinal_over25 = f"{id_jogo}_O25"
-                    if confianca_over25 > 70 and id_sinal_over25 not in st.session_state.sinais_enviados:
-                        enviar_sinal_vip("PRE_MATCH", casa, fora, confianca_over25, "2.5 Gols", valor_entrada, horario_jogo, odd="2.00") # Odd sugerida maior
-                        st.session_state.sinais_enviados.append(id_sinal_over25)
-                        st.session_state.aposta_pendente.append({'id': id_jogo, 'casa': casa, 'fora': fora, 'previsao': "2.5 Gols", 'valor': valor_entrada, 'odd': 2.00, 'data_api': data_api})
-                        add_log(f"🔥 SINAL O2.5: {casa} x {fora} ({confianca_over25}%) | Temp: {ano_base}")
-                        
-                    # Se TUDO for ruim, avisa no log APENAS UMA VEZ e põe na lista negra
-                    if confianca_vit_casa <= 75 and confianca_vit_fora <= 75 and confianca_over15 <= 80 and confianca_over25 <= 70:
-                        if id_jogo not in st.session_state.jogos_ignorados:
-                            add_log(f"⚠️ IGNORADO: {casa} x {fora} | V.C: {confianca_vit_casa}% | V.F: {confianca_vit_fora}% | O1.5: {confianca_over15}% | O2.5: {confianca_over25}%")
-                            st.session_state.jogos_ignorados.append(id_jogo)
-                        
-                st.toast("Análise matemática com dados REAIS concluída!")
-                    
-        else:
-            st.info("Nenhum jogo em Ligas de Ouro hoje ou aguardando cache.")
-            
-        st.markdown("---")
-        if st.button("🔄 Forçar Busca de Jogos (Limpar Cache)"):
-            st.cache_data.clear()
-            st.rerun()
-    
-    with col_pre:
-        st.markdown("---")
-        st.subheader("🔄 Gestão e Auditoria (Automático)")
-        
-        if st.session_state.aposta_pendente:
-            st.warning(f"Existem {len(st.session_state.aposta_pendente)} apostas aguardando resultado.")
-            
-            # 🚨 CORREÇÃO CRÍTICA: Agora o Auditor trabalha sozinho se o Piloto estiver ON!
-            if piloto_automatico or st.button("🔍 Auditar Resultados na API Agora"):
-                resultado_auditoria = auditar_resultados_pendentes()
-                
-                # Só dá o Rerun forçado e o Toast se você clicou no botão manual
-                if not piloto_automatico:
-                    st.toast(resultado_auditoria)
-                    st.rerun()
-        else:
-            st.success("Nenhuma aposta pendente no momento.")
-            st.info(f"Multiplicador Atual (Martingale): **{st.session_state.multiplier}x**")
-    
-    with col_live:
-        st.subheader("📡 Radar Ao Vivo e Banco de Memória")
-        st.write("A inteligência está programada para filtrar apenas:")
-        for id_liga, nome_liga in LIGAS_OURO.items():
-            st.caption(f"🏆 {nome_liga}")
-            st.markdown("---")
-                
-        # Menu Sanfona com os horários de operação
-        with st.expander("⏰ Mapa da Mina (Horários de Ouro para ligar o Bot)"):
-            st.markdown("""
-            **📅 Finais de Semana (Sáb e Dom): O Boom do Mercado**
-            * **Ligar o Robô:** 07h00 (Para pegar as aberturas da Europa)
-            * **Desligar o Robô:** 21h00 (Após os jogos do Brasileirão)
-            
-            **📅 Meio de Semana (Ter a Qui): Champions e Copas**
-            * **Ligar o Robô:** 14h00 (Antecedendo a Europa às 16h)
-            * **Desligar o Robô:** 22h00 (Fim das rodadas Sul-Americanas)
-            
-            **📅 Dias de Baixa (Seg e Sex): Ressaca do Mercado**
-            * Dias com poucos jogos de elite. Ideal para folga do PC ou ligar apenas no fim da tarde.
-            
-            ---
-            ⚠️ **REGRA DE OURO:** *Só feche o painel e desligue o PC quando a lista de "Apostas Pendentes" estiver vazia, garantindo que o robô já enviou os resultados (Green/Red) para o Telegram.*
-            """)
-            
-        st.markdown("---")
-        st.write("📝 **Logs do Sistema (Caixa Preta):**")
-        for l in st.session_state.log[:6]:
-            st.caption(l)
-    # --- AUTOMAÇÃO DE RELATÓRIO ---
-    # Se for entre 23:45 e 23:59, o robô envia o relatório sozinho ao ser visitado pelo GitHub
-    agora_hora = datetime.now().strftime("%H:%M")
-    if "23:45" <= agora_hora <= "23:59":
-        enviar_resumo_diario()
+        st.error(f"Erro ao carregar dados: {e}")
+
+    # --- BOTÃO DE BUSCA E LOGS ---
+    st.markdown("---")
+    if st.button("🔄 Forçar Busca de Jogos (Limpar Cache)"):
+        st.cache_data.clear()
+        st.rerun()
+
+    st.subheader("📝 Logs do Sistema")
+    for l in st.session_state.log[:10]:
+        st.caption(l)
+
     st_autorefresh(interval=900000, key="auto_refresh")
