@@ -300,11 +300,11 @@ if check_password():
     # ==========================================
     @st.cache_data(ttl=60)
     def buscar_jogos_do_dia_filtrados():
-    url = "https://v3.football.api-sports.io/fixtures"
-    hoje = datetime.now().strftime("%Y-%m-%d")
-    querystring = {"date": hoje, "timezone": "America/Sao_Paulo"}
-    headers = {'x-apisports-key': API_KEY}
-    
+        url = "https://v3.football.api-sports.io/fixtures"
+        hoje = datetime.now().strftime("%Y-%m-%d")
+        querystring = {"date": hoje, "timezone": "America/Sao_Paulo"}
+        headers = {'x-apisports-key': API_KEY}
+        
         try:
             resp = requests.get(url, headers=headers, params=querystring)
             if resp.status_code == 200:
