@@ -576,8 +576,12 @@ if check_password():
                     if confianca_over15 > 80 and id_sinal_over15 not in st.session_state.sinais_enviados:
                         enviar_sinal_vip("PRE_MATCH", casa, fora, confianca_over15, "1.5 Gols", valor_entrada, horario_jogo)
                         st.session_state.sinais_enviados.append(id_sinal_over15)
+                        
+                        # --- LINHA VITAL: Isso faz o card aparecer na tela ---
+                        registrar_resultado({'casa': casa, 'fora': fora, 'previsao': "1.5 Gols", 'odd': 1.85}, "PENDENTE", 0)
+                        
                         st.session_state.aposta_pendente.append({'id': id_jogo, 'casa': casa, 'fora': fora, 'previsao': "1.5 Gols", 'valor': valor_entrada, 'odd': 1.85, 'data_api': data_api})
-                        add_log(f"⚽ SINAL O1.5: {casa} x {fora} ({confianca_over15}%) | Temp: {ano_base}")
+                        add_log(f"⚽ SINAL O1.5: {casa} x {fora} ({confianca_over15}%) | GRAVADO NA PLANILHA")
     
                     # 6. FILTRO 4: Over 2.5 Gols > 70% (NOVO! Exige um pouco menos de % porque é mais difícil acontecer)
                     id_sinal_over25 = f"{id_jogo}_O25"
