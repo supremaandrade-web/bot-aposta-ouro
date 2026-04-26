@@ -406,7 +406,7 @@ if check_password():
     st.sidebar.write(f"💳 Créditos Hoje: **{st.session_state.consultas}/100**")
     st.sidebar.caption("Ligas de Ouro ativadas para proteção de créditos.")
     
-    # --- STATUS DE CONEXÃO (UPGRADE VISUAL) ---
+    # --- STATUS DE CONEXÃO (MONITOR DE SAÚDE) ---
     st.sidebar.markdown("---")
     st.sidebar.subheader("📡 Status do Sistema")
     
@@ -422,16 +422,25 @@ if check_password():
     except:
         col_status_tg.warning("🟡 Telegram")
 
-    # Monitor da API de Futebol (Fácil identificação de problemas)
+    # Monitor da API de Futebol (Solicitado para identificar problemas)
     try:
         url_api = "https://v3.football.api-sports.io/status"
-        res_api = requests.get(url_api, headers={'x-apisports-key': API_KEY}, timeout=5)
+        headers_api = {'x-apisports-key': API_KEY}
+        res_api = requests.get(url_api, headers=headers_api, timeout=5)
         if res_api.status_code == 200:
             col_status_api.success("🟢 API Futebol")
         else:
             col_status_api.error("🔴 API Futebol")
     except:
         col_status_api.warning("🟡 API Futebol")
+
+    # --- FUNÇÃO DE LOGS COM REFRESH DE PLANILHA ---
+    def add_log(msg):
+        """Adiciona mensagem ao log e verifica se há necessidade de forçar escrita."""
+        st.session_state.log.insert(0, f"[{datetime.now().strftime('%H:%M:%S')}] {msg}")
+        # Se o log indicar que um sinal foi enviado, tentamos limpar o cache da planilha
+        if "SINAL" in msg.upper():
+            st.cache_data.clear()
     if modo_auto:
         st.sidebar.success("🤖 BOT ATIVO: Trabalhando sozinho via nuvem.")
         piloto_automatico = True 
