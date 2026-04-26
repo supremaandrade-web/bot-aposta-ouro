@@ -475,10 +475,9 @@ if check_password():
     st.title("👑 PAINEL IA SUPREMA - VISÃO SUPER-HUMANA")    
     
 # --- DASHBOARD DE ESTATÍSTICAS (VERSÃO BLINDADA) ---
+    url_planilha = "https://docs.google.com/spreadsheets/d/1Y4D4t2svOeT24vnKcWnzDcwz7tPyRvkeDP8sSm_xPkQ/edit?usp=sharing"
     conn = st.connection("gsheets", type=GSheetsConnection)
-    df_historico = conn.read(spreadsheet=url_planilha, ttl=0) # ttl=0 força a leitura real da planilha
     try:
-        url_planilha = "https://docs.google.com/spreadsheets/d/1Y4D4t2svOeT24vnKcWnzDcwz7tPyRvkeDP8sSm_xPkQ/edit?usp=sharing"
         df_historico = conn.read(spreadsheet=url_planilha)
         
         if not df_historico.empty:
