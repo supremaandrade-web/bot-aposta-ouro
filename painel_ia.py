@@ -298,8 +298,9 @@ if check_password():
     # ==========================================
     # 📡 CACHE E ECONOMIA DE API
     # ==========================================
-    @st.cache_data(ttl=60)
+    @st.cache_data(ttl=1)
     def buscar_jogos_do_dia_filtrados():
+        st.write("📡 Tentando conectar à API agora...")
         url = "https://v3.football.api-sports.io/fixtures"
         hoje = datetime.now().strftime("%Y-%m-%d")
         querystring = {"date": hoje, "timezone": "America/Sao_Paulo"}
@@ -307,25 +308,25 @@ if check_password():
         
         try:
             resp = requests.get(url, headers=headers, params=querystring)
+            st.write(f"🌐 Status da API: {resp.status_code}")
+            
             if resp.status_code == 200:
                 st.session_state.consultas += 1 
                 todos_jogos = resp.json().get('response', [])
+                st.write(f"⚽ Jogos encontrados no mundo: {len(todos_jogos)}")
                 
-                # Pega os primeiros 3 jogos para o teste
-                jogos_teste = todos_jogos[:3]
+                jogos_teste = todos_jogos[:2]
                 for j in jogos_teste:
                     casa = j['teams']['home']['name']
                     fora = j['teams']['away']['name']
-                    add_log(f"🧪 TESTE ATIVO: {casa} x {fora}")
                     
-                    # Envio para o Telegram
+                    # TESTE REAL: Envia para o Telegram SEM FILTROS
                     url_tg = f"https://api.telegram.org/bot{TOKEN_TELEGRAM}/sendMessage"
-                    msg_teste = f"🧪 **SISTEMA VIVO!**\nAchamos: {casa} x {fora}\nConexão OK!"
-                    requests.post(url_tg, json={"chat_id": CHAT_ID, "text": msg_teste, "parse_mode": "Markdown"})
-                    
+                    requests.post(url_tg, json={"chat_id": CHAT_ID, "text": f"🧪 TESTE: {casa} x {fora}"})
+                    add_log(f"🧪 Enviado teste: {casa} x {fora}")
                 return jogos_teste
         except Exception as e:
-            add_log(f"❌ Erro: {e}")
+            st.error(f"❌ Erro na chamada: {e}")
         return []
     def enviar_resumo_diario():
         """Lê da Planilha Google e envia o fechamento financeiro para o Telegram."""
