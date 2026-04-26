@@ -483,58 +483,66 @@ if check_password():
         confianca_over15 = (1 - (calcular_poisson(media_total, 0) + calcular_poisson(media_total, 1))) * 100
         return round(confianca_vit_casa, 1), round(confianca_vit_fora, 1), round(confianca_over15, 1)
 
-    # ==========================================
-    # 📊 CORPO PRINCIPAL E DASHBOARD
-    # ==========================================
+    # ==========================================================
+    # 📊 PARTE VISUAL E DASHBOARD (SUBSTITUA APENAS ESTE FINAL)
+    # ==========================================================
     st.title("👑 PAINEL IA SUPREMA - VISÃO SUPER-HUMANA")
+    
+    # URL da planilha definida antes de qualquer uso para evitar NameError
     url_planilha = "https://docs.google.com/spreadsheets/d/1Y4D4t2svOeT24vnKcWnzDcwz7tPyRvkeDP8sSm_xPkQ/edit?usp=sharing"
 
-    # SIDEBAR ÚNICA
+    # --- STATUS DO SISTEMA (UNIFICADO) ---
+    st.sidebar.markdown("---")
     st.sidebar.subheader("📡 Status do Sistema")
-    col_tg, col_api = st.sidebar.columns(2)
+    c_tg, c_api = st.sidebar.columns(2)
+    
     try:
         if requests.get(f"https://api.telegram.org/bot{TOKEN_TELEGRAM}/getMe", timeout=5).status_code == 200:
-            col_tg.success("🟢 Telegram")
-    except: col_tg.error("🔴 Telegram")
+            c_tg.success("🟢 TG")
+    except: c_tg.error("🔴 TG")
+
     try:
         if requests.get("https://v3.football.api-sports.io/status", headers={'x-apisports-key': API_KEY}, timeout=5).status_code == 200:
-            col_api.success("🟢 API Futebol")
-    except: col_api.error("🔴 API Futebol")
+            c_api.success("🟢 API")
+    except: c_api.error("🔴 API")
 
-    # BOTÃO DE DESBLOQUEIO DE CARDS
+    # --- O BOTÃO QUE DESBLOQUEIA OS CARDS ---
     st.sidebar.markdown("---")
-    if st.sidebar.button("🚨 RESETAR MEMÓRIA E GRAVAR CARDS", key="reset_final", use_container_width=True):
-        st.session_state.sinais_enviados = []
-        st.cache_data.clear()
+    if st.sidebar.button("🚨 RESETAR MEMÓRIA E GRAVAR CARDS", use_container_width=True):
+        st.session_state.sinais_enviados = [] # Limpa o bloqueio de "já enviado"
+        st.cache_data.clear() # Limpa o cache da planilha
         st.rerun()
 
-    # LEITURA DA PLANILHA E EXIBIÇÃO DE CARDS
+    # --- LEITURA DA PLANILHA EM TEMPO REAL ---
     try:
         conn = st.connection("gsheets", type=GSheetsConnection)
-        df_historico = conn.read(spreadsheet=url_planilha, ttl=0)
+        df_historico = conn.read(spreadsheet=url_planilha, ttl=0) # ttl=0 força a leitura real
         
         if not df_historico.empty:
             st.subheader("🏟️ Apostas Aguardando Resultado")
             col_res = 'Resultado' if 'Resultado' in df_historico.columns else 'Res.'
+            
+            # Filtra o que ainda não tem resultado para mostrar nos Cards
             df_pendentes = df_historico[~df_historico[col_res].astype(str).str.contains('GREEN|RED|GANHA|PERDIDA', case=False, na=False)]
             
             if not df_pendentes.empty:
                 for _, jogo in df_pendentes.iterrows():
                     with st.expander(f"⏳ {jogo['Casa']} x {jogo['Fora']}", expanded=True):
-                        st.write(f"**Entrada:** {jogo['Previsao_IA']} | **Data:** {jogo['Data']}")
+                        st.write(f"**Entrada:** {jogo.get('Previsao_IA', 'Over 1.5')} | **Data:** {jogo.get('Data', 'Hoje')}")
             else:
-                st.info("Nenhuma aposta ativa na planilha.")
+                st.info("Planilha atualizada, mas sem apostas pendentes gravadas.")
         else:
-            st.info("A planilha Google Sheets está vazia.")
+            st.info("Planilha vazia. Clique em Reset e Forçar Busca para gravar os sinais de hoje.")
+            
     except Exception as e:
-        st.error(f"Erro de conexão: {e}")
+        st.error(f"Erro ao carregar dados: {e}")
 
-    # BOTÃO DE BUSCA E LOGS
+    # --- BOTÃO DE BUSCA E LOGS ---
     if st.button("🔄 Forçar Busca de Jogos (Limpar Cache)", type="primary"):
         st.cache_data.clear()
         st.rerun()
 
-    st.subheader("📝 Logs do Sistema")
+    st.subheader("📝 Logs (Caixa Preta)")
     for l in st.session_state.log[:10]:
         st.caption(l)
 
