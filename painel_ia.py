@@ -405,7 +405,8 @@ if check_password():
     st.sidebar.progress(min(st.session_state.consultas / 100, 1.0))
     st.sidebar.write(f"💳 Créditos Hoje: **{st.session_state.consultas}/100**")
     st.sidebar.caption("Ligas de Ouro ativadas para proteção de créditos.")
-    # --- STATUS DE CONEXÃO (UPGRADE) ---
+    
+    # --- STATUS DE CONEXÃO (UPGRADE VISUAL) ---
     st.sidebar.markdown("---")
     st.sidebar.subheader("📡 Status do Sistema")
     
@@ -421,7 +422,7 @@ if check_password():
     except:
         col_status_tg.warning("🟡 Telegram")
 
-    # Monitor da API de Futebol (NOVO!)
+    # Monitor da API de Futebol (Fácil identificação de problemas)
     try:
         url_api = "https://v3.football.api-sports.io/status"
         res_api = requests.get(url_api, headers={'x-apisports-key': API_KEY}, timeout=5)
