@@ -408,33 +408,30 @@ if check_password():
     st.sidebar.write(f"💳 Créditos Hoje: **{st.session_state.consultas}/100**")
     st.sidebar.caption("Ligas de Ouro ativadas para proteção de créditos.")
     
-    # --- STATUS DE CONEXÃO (MONITOR DE SAÚDE) ---
+    # --- MONITOR DE STATUS ÚNICO E BOTÃO DE DESBLOQUEIO ---
     st.sidebar.markdown("---")
     st.sidebar.subheader("📡 Status do Sistema")
+    col_st_tg, col_st_api = st.sidebar.columns(2)
     
-    col_status_tg, col_status_api = st.sidebar.columns(2)
-    
-    # Monitor do Telegram
+    # Teste unificado do Telegram
     try:
-        url_teste = f"https://api.telegram.org/bot{TOKEN_TELEGRAM}/getMe"
-        if requests.get(url_teste, timeout=5).status_code == 200:
-            col_status_tg.success("🟢 Telegram")
-        else:
-            col_status_tg.error("🔴 Telegram")
-    except:
-        col_status_tg.warning("🟡 Telegram")
+        if requests.get(f"https://api.telegram.org/bot{TOKEN_TELEGRAM}/getMe", timeout=5).status_code == 200:
+            col_st_tg.success("🟢 Telegram")
+    except: col_st_tg.error("🔴 Telegram")
 
-    # Monitor da API de Futebol (Solicitado para identificar problemas)
+    # Teste unificado da API
     try:
-        url_api = "https://v3.football.api-sports.io/status"
-        headers_api = {'x-apisports-key': API_KEY}
-        res_api = requests.get(url_api, headers=headers_api, timeout=5)
-        if res_api.status_code == 200:
-            col_status_api.success("🟢 API Futebol")
-        else:
-            col_status_api.error("🔴 API Futebol")
-    except:
-        col_status_api.warning("🟡 API Futebol")
+        if requests.get("https://v3.football.api-sports.io/status", headers={'x-apisports-key': API_KEY}, timeout=5).status_code == 200:
+            col_st_api.success("🟢 API Futebol")
+    except: col_st_api.error("🔴 API Futebol")
+
+    st.sidebar.markdown("---")
+    # Este botão é a chave para os cards aparecerem!
+    if st.sidebar.button("🚨 RESETAR MEMÓRIA E GRAVAR CARDS", use_container_width=True):
+        st.session_state.sinais_enviados = [] # Limpa a lista de bloqueio
+        st.session_state.jogos_ignorados = []
+        st.cache_data.clear() # Limpa o cache da planilha
+        st.success("Memória limpa! Clique em 'Forçar Busca' agora.")
 
     # --- FUNÇÃO DE LOGS COM REFRESH DE PLANILHA ---
     def add_log(msg):
@@ -472,34 +469,42 @@ if check_password():
         unsafe_allow_html=True
     )
     # ==========================================
-    # 📊 CORPO PRINCIPAL DO PAINEL (LINHA 470+)
+    # 📊 CORPO PRINCIPAL DO PAINEL
     # ==========================================
     st.title("👑 PAINEL IA SUPREMA - VISÃO SUPER-HUMANA")    
-    
-    # URL da planilha definida antes de qualquer uso
     url_planilha = "https://docs.google.com/spreadsheets/d/1Y4D4t2svOeT24vnKcWnzDcwz7tPyRvkeDP8sSm_xPkQ/edit?usp=sharing"
 
-    # --- MONITOR DE STATUS ÚNICO ---
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("📡 Status do Sistema")
-    col_st_tg, col_st_api = st.sidebar.columns(2)
-    
     try:
-        if requests.get(f"https://api.telegram.org/bot{TOKEN_TELEGRAM}/getMe", timeout=5).status_code == 200:
-            col_st_tg.success("🟢 Telegram")
-    except: col_st_tg.error("🔴 Telegram")
+        # Força a leitura da planilha sem cache (ttl=0)
+        conn = st.connection("gsheets", type=GSheetsConnection)
+        df_historico = conn.read(spreadsheet=url_planilha, ttl=0)
+        
+        if not df_historico.empty:
+            col_res = 'Resultado' if 'Resultado' in df_historico.columns else 'Res.'
+            df_historico[col_res] = df_historico[col_res].astype(str).fillna("")
 
-    try:
-        if requests.get("https://v3.football.api-sports.io/status", headers={'x-apisports-key': API_KEY}, timeout=5).status_code == 200:
-            col_st_api.success("🟢 API Futebol")
-    except: col_st_api.error("🔴 API Futebol")
+            # MÉTRICAS DE TOPO
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Total de Sinais Gravados", len(df_historico))
+            greens = len(df_historico[df_historico[col_res].str.contains('GANHA|GREEN', case=False)])
+            reds = len(df_historico[df_historico[col_res].str.contains('PERDIDA|RED', case=False)])
+            c2.metric("Greens ✅", greens)
+            c3.metric("Reds ❌", reds)
 
-    # --- BOTÃO DE RESET (ESSENCIAL PARA OS CARDS VOLTAREM) ---
-    st.sidebar.markdown("---")
-    if st.sidebar.button("🚨 RESETAR MEMÓRIA E GRAVAR CARDS"):
-        st.session_state.sinais_enviados = []
-        st.cache_data.clear()
-        st.success("Memória limpa! Clique em 'Forçar Busca' no painel principal.")
+            # CARDS DE APOSTAS PENDENTES
+            st.header("🏟️ Apostas Aguardando Resultado")
+            df_pendentes = df_historico[~df_historico[col_res].str.contains('GANHA|GREEN|PERDIDA|RED', case=False)]
+            
+            if not df_pendentes.empty:
+                for _, jogo in df_pendentes.iterrows():
+                    with st.expander(f"⏳ {jogo['Casa']} x {jogo['Fora']}", expanded=True):
+                        st.write(f"**Entrada:** {jogo['Previsao_IA']} | **Data:** {jogo['Data']}")
+            else:
+                st.info("Nenhuma aposta pendente na planilha. O robô está monitorando!")
+        else:
+            st.info("Planilha vazia no Google Sheets. Use o botão de Reset e Forçar Busca para gravar os sinais atuais.")
+    except Exception as e:
+        st.error(f"Erro ao carregar dados da planilha: {e}")
 
     # --- DASHBOARD DE ESTATÍSTICAS ---
     try:
