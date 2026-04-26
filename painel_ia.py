@@ -474,11 +474,37 @@ if check_password():
     # ==========================================
     st.title("👑 PAINEL IA SUPREMA - VISÃO SUPER-HUMANA")    
     
-    # URL definida ANTES de ser usada (Evita o NameError)
+    # URL DEFINIDA NO TOPO (Evita o erro de NameError)
     url_planilha = "https://docs.google.com/spreadsheets/d/1Y4D4t2svOeT24vnKcWnzDcwz7tPyRvkeDP8sSm_xPkQ/edit?usp=sharing"
 
+    # --- UPGRADE: STATUS DE CONEXÃO (MONITOR DE SAÚDE) ---
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("📡 Status do Sistema")
+    col_status_tg, col_status_api = st.sidebar.columns(2)
+    
+    # Monitor do Telegram
     try:
-        # Conexão com TTL=0 para ler a planilha em tempo real
+        url_teste_tg = f"https://api.telegram.org/bot{TOKEN_TELEGRAM}/getMe"
+        if requests.get(url_teste_tg, timeout=5).status_code == 200:
+            col_status_tg.success("🟢 Telegram")
+        else:
+            col_status_tg.error("🔴 Telegram")
+    except:
+        col_status_tg.warning("🟡 Telegram")
+
+    # Monitor da API de Futebol (CORRIGIDO: Agora envia a chave correta para o teste)
+    try:
+        url_status_api = "https://v3.football.api-sports.io/status"
+        res_api = requests.get(url_status_api, headers={'x-apisports-key': API_KEY}, timeout=5)
+        if res_api.status_code == 200:
+            col_status_api.success("🟢 API Futebol")
+        else:
+            col_status_api.error("🔴 API Futebol")
+    except:
+        col_status_api.warning("🟡 API Futebol")
+
+    # --- DASHBOARD DE ESTATÍSTICAS ---
+    try:
         conn = st.connection("gsheets", type=GSheetsConnection)
         df_historico = conn.read(spreadsheet=url_planilha, ttl=0)
         
