@@ -296,11 +296,10 @@ if check_password():
             return False
     
     # ==========================================
-    # 📡 CACHE E ECONOMIA DE API
+    # 🎯 MODO SNIPER COM GRAVAÇÃO FORÇADA
     # ==========================================
-    @st.cache_data(ttl=3600 * 2) 
+    @st.cache_data(ttl=1) # TTL reduzido para 1 segundo para forçar a atualização agora
     def buscar_jogos_do_dia_filtrados():
-        """Faz UMA requisição e filtra as Ligas de Ouro (Economia de Créditos)."""
         url = "https://v3.football.api-sports.io/fixtures"
         hoje = datetime.now().strftime("%Y-%m-%d")
         querystring = {"date": hoje, "timezone": "America/Sao_Paulo"}
@@ -309,13 +308,16 @@ if check_password():
         try:
             resp = requests.get(url, headers=headers, params=querystring)
             if resp.status_code == 200:
-                # Registra o gasto de 1 crédito no sistema
+                # Sincroniza os créditos (Atualmente em 42/100)
                 st.session_state.consultas = sincronizar_creditos_api()
                 todos_jogos = resp.json().get('response', [])
                 
-                # Aplica o Filtro das Ligas de Ouro configuradas no topo
                 jogos_ouro = [j for j in todos_jogos if j['league']['id'] in LIGAS_OURO]
-                add_log(f"📡 Varredura concluída: {len(jogos_ouro)} jogos de elite encontrados.")
+                add_log(f"📡 Varredura: {len(jogos_ouro)} jogos de elite encontrados.")
+                
+                # FORÇA A LIMPEZA DO CAIXA DE PENDENTES PARA RECONSTRUIR OS CARDS
+                st.cache_data.clear() 
+                
                 return jogos_ouro
         except Exception as e:
             add_log(f"⚠️ Erro na API: {e}")
