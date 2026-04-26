@@ -484,18 +484,20 @@ if check_password():
         return round(confianca_vit_casa, 1), round(confianca_vit_fora, 1), round(confianca_over15, 1)
 
     # ==========================================================
-    # 📊 PARTE VISUAL E DASHBOARD (SUBSTITUA APENAS ESTE FINAL)
+    # 📊 FINAL DO CÓDIGO: DASHBOARD E STATUS (CORREÇÃO DE DUPLICIDADE)
     # ==========================================================
     st.title("👑 PAINEL IA SUPREMA - VISÃO SUPER-HUMANA")
     
-    # URL da planilha definida antes de qualquer uso para evitar NameError
+    # URL da planilha definida de forma global para este bloco
     url_planilha = "https://docs.google.com/spreadsheets/d/1Y4D4t2svOeT24vnKcWnzDcwz7tPyRvkeDP8sSm_xPkQ/edit?usp=sharing"
 
-    # --- STATUS DO SISTEMA (UNIFICADO) ---
+    # --- STATUS DO SISTEMA ÚNICO NA SIDEBAR ---
+    # Nota: Certifique-se de que não existam outros 'st.sidebar.subheader("📡 Status do Sistema")' acima no código.
     st.sidebar.markdown("---")
     st.sidebar.subheader("📡 Status do Sistema")
     c_tg, c_api = st.sidebar.columns(2)
     
+    # Monitoramento de conexão
     try:
         if requests.get(f"https://api.telegram.org/bot{TOKEN_TELEGRAM}/getMe", timeout=5).status_code == 200:
             c_tg.success("🟢 TG")
@@ -506,44 +508,48 @@ if check_password():
             c_api.success("🟢 API")
     except: c_api.error("🔴 API")
 
-    # --- O BOTÃO QUE DESBLOQUEIA OS CARDS ---
+    # --- BOTÃO DE RESET COM ID ÚNICO (Resolve o erro StreamlitDuplicateElementId) ---
     st.sidebar.markdown("---")
-    if st.sidebar.button("🚨 RESETAR MEMÓRIA E GRAVAR CARDS", use_container_width=True):
-        st.session_state.sinais_enviados = [] # Limpa o bloqueio de "já enviado"
-        st.cache_data.clear() # Limpa o cache da planilha
+    if st.sidebar.button("🚨 RESETAR MEMÓRIA E GRAVAR CARDS", key="btn_reset_unico", use_container_width=True):
+        st.session_state.sinais_enviados = [] 
+        st.cache_data.clear()
         st.rerun()
 
-    # --- LEITURA DA PLANILHA EM TEMPO REAL ---
+    # --- EXIBIÇÃO DOS CARDS DA PLANILHA ---
     try:
         conn = st.connection("gsheets", type=GSheetsConnection)
-        df_historico = conn.read(spreadsheet=url_planilha, ttl=0) # ttl=0 força a leitura real
+        df_historico = conn.read(spreadsheet=url_planilha, ttl=0)
         
         if not df_historico.empty:
-            st.subheader("🏟️ Apostas Aguardando Resultado")
             col_res = 'Resultado' if 'Resultado' in df_historico.columns else 'Res.'
-            
-            # Filtra o que ainda não tem resultado para mostrar nos Cards
-            df_pendentes = df_historico[~df_historico[col_res].astype(str).str.contains('GREEN|RED|GANHA|PERDIDA', case=False, na=False)]
+            df_historico[col_res] = df_historico[col_res].astype(str).fillna("")
+
+            # Cards de Apostas Ativas
+            st.header("🏟️ Apostas Aguardando Resultado")
+            df_pendentes = df_historico[~df_historico[col_res].str.contains('GREEN|RED|GANHA|PERDIDA', case=False, na=False)]
             
             if not df_pendentes.empty:
-                for _, jogo in df_pendentes.iterrows():
-                    with st.expander(f"⏳ {jogo['Casa']} x {jogo['Fora']}", expanded=True):
-                        st.write(f"**Entrada:** {jogo.get('Previsao_IA', 'Over 1.5')} | **Data:** {jogo.get('Data', 'Hoje')}")
+                for index, jogo in df_pendentes.iterrows():
+                    # Usamos o index para garantir que cada expander tenha um ID único
+                    with st.expander(f"⏳ {jogo.get('Casa')} x {jogo.get('Fora')}", expanded=True):
+                        st.write(f"**Entrada:** {jogo.get('Previsao_IA')} | **Data:** {jogo.get('Data')}")
             else:
-                st.info("Planilha atualizada, mas sem apostas pendentes gravadas.")
+                st.info("Nenhuma aposta pendente gravada. Use o Reset e Forçar Busca para atualizar.")
         else:
-            st.info("Planilha vazia. Clique em Reset e Forçar Busca para gravar os sinais de hoje.")
+            st.info("A planilha Google Sheets está vazia.")
             
     except Exception as e:
-        st.error(f"Erro ao carregar dados: {e}")
+        st.error(f"Erro na Dashboard: {e}")
 
     # --- BOTÃO DE BUSCA E LOGS ---
-    if st.button("🔄 Forçar Busca de Jogos (Limpar Cache)", type="primary"):
+    st.markdown("---")
+    if st.button("🔄 Forçar Busca de Jogos (Limpar Cache)", key="btn_busca_principal"):
         st.cache_data.clear()
         st.rerun()
 
     st.subheader("📝 Logs (Caixa Preta)")
+    # Mostra os últimos 10 logs
     for l in st.session_state.log[:10]:
         st.caption(l)
 
-    st_autorefresh(interval=900000, key="auto_refresh")
+    st_autorefresh(interval=900000, key="auto_refresh_global")
