@@ -471,9 +471,6 @@ if check_password():
         """,
         unsafe_allow_html=True
     )
-        st.session_state.sinais_enviados = [] # Limpa a memória de sinais já mandados
-        st.cache_data.clear() # Limpa o cache de busca
-        st.success("Memória limpa! Agora clique em 'Forçar Busca de Jogos' abaixo.")
 
     # ==========================================
     # 📊 DASHBOARD DE ESTATÍSTICAS E CARDS
