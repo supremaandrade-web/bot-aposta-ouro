@@ -471,46 +471,40 @@ if check_password():
         """,
         unsafe_allow_html=True
     )
-    # ==========================================
-    # 📊 CORPO PRINCIPAL E STATUS (VERSÃO ÚNICA)
-    # ==========================================
-    st.title("👑 PAINEL IA SUPREMA - VISÃO SUPER-HUMANA")    
-    url_planilha = "https://docs.google.com/spreadsheets/d/1Y4D4t2svOeT24vnKcWnzDcwz7tPyRvkeDP8sSm_xPkQ/edit?usp=sharing"
-
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("📡 Status do Sistema")
-    col_status_tg, col_status_api = st.sidebar.columns(2)
-    
-    # Teste Telegram
-    try:
-        if requests.get(f"https://api.telegram.org/bot{TOKEN_TELEGRAM}/getMe", timeout=5).status_code == 200:
-            col_status_tg.success("🟢 Telegram")
-    except: col_status_tg.error("🔴 Telegram")
-
-    # Teste API (Corrigido)
-    try:
-        if requests.get("https://v3.football.api-sports.io/status", headers={'x-apisports-key': API_KEY}, timeout=5).status_code == 200:
-            col_status_api.success("🟢 API Futebol")
-    except: col_status_api.error("🔴 API Futebol")
-
-    # --- BOTÃO DE RESET TOTAL (USE ISSO PARA OS CARDS APARECEREM) ---
-    if st.button("🚨 RESETAR MEMÓRIA E REGRAVAR PLANILHA"):
         st.session_state.sinais_enviados = [] # Limpa a memória de sinais já mandados
         st.cache_data.clear() # Limpa o cache de busca
         st.success("Memória limpa! Agora clique em 'Forçar Busca de Jogos' abaixo.")
 
-    # --- DASHBOARD DE ESTATÍSTICAS ---
+    # ==========================================
+    # 📊 DASHBOARD DE ESTATÍSTICAS E CARDS
+    # ==========================================
+    st.title("👑 PAINEL IA SUPREMA - VISÃO SUPER-HUMANA")
+    url_planilha = "https://docs.google.com/spreadsheets/d/1Y4D4t2svOeT24vnKcWnzDcwz7tPyRvkeDP8sSm_xPkQ/edit?usp=sharing"
+
     try:
+        # Conexão forçada sem cache para ler em tempo real (ttl=0)
         conn = st.connection("gsheets", type=GSheetsConnection)
         df_historico = conn.read(spreadsheet=url_planilha, ttl=0)
         
         if not df_historico.empty:
-            # (Restante do código de performance e gráficos...)
-            st.metric("Total de Sinais", len(df_historico))
+            col_res = 'Resultado' if 'Resultado' in df_historico.columns else 'Res.'
+            df_historico[col_res] = df_historico[col_res].astype(str).fillna("")
+
+            # --- CARDS DE APOSTAS PENDENTES ---
+            st.header("🏟️ Apostas Aguardando Resultado")
+            df_pendentes = df_historico[~df_historico[col_res].str.contains('GANHA|GREEN|PERDIDA|RED', case=False, na=False)]
+            
+            if not df_pendentes.empty:
+                for index, jogo in df_pendentes.iterrows():
+                    with st.expander(f"⏳ {jogo.get('Casa')} x {jogo.get('Fora')}", expanded=True):
+                        st.write(f"**Entrada:** {jogo.get('Previsao_IA')} | **Data:** {jogo.get('Data')}")
+            else:
+                st.info("Nenhuma aposta pendente gravada na planilha ainda.")
         else:
-            st.info("Planilha vazia no Google Sheets. O robô aguarda o próximo sinal para gravar.")
+            st.warning("⚠️ Planilha vazia. O robô precisa gravar o primeiro sinal para gerar os cards.")
+
     except Exception as e:
-        st.error(f"Erro de conexão: {e}")
+        st.error(f"Erro ao carregar Dashboard: {e}")
     # ⚽💰 Gráfico Superior de Título (Troféu VIP e Bola Estáveis)
     st.markdown(
         """
