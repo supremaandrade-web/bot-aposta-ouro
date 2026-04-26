@@ -152,7 +152,7 @@ if check_password():
         
         if not dados_liga:
             add_log(f"📭 Tabela VAZIA na API (Liga {id_liga}, Temp {temporada})")
-            return 1.5, temp_usada 
+            return 1.6, temp_usada 
             
         try:
             todas_as_tabelas = dados_liga[0]['league']['standings']
@@ -475,6 +475,8 @@ if check_password():
     st.title("👑 PAINEL IA SUPREMA - VISÃO SUPER-HUMANA")    
     
 # --- DASHBOARD DE ESTATÍSTICAS (VERSÃO BLINDADA) ---
+    conn = st.connection("gsheets", type=GSheetsConnection)
+    df_historico = conn.read(spreadsheet=url_planilha, ttl=0) # ttl=0 força a leitura real da planilha
     try:
         url_planilha = "https://docs.google.com/spreadsheets/d/1Y4D4t2svOeT24vnKcWnzDcwz7tPyRvkeDP8sSm_xPkQ/edit?usp=sharing"
         df_historico = conn.read(spreadsheet=url_planilha)
