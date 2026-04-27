@@ -244,16 +244,17 @@ if check_password():
         return 0
 
     def consultar_creditos_sportdb():
-        """Consulta o limite de requisições na SportDB."""
-        url = "https://api.sportdb.dev/api/flashscore/football" # Endpoint de teste
+        """Consulta o limite de requisições na SportDB usando o endpoint de estatísticas."""
+        url = "https://api.sportdb.dev/api/v1/usage" # Endpoint específico de uso
         headers = {"X-API-Key": API_SPORTDB}
         try:
             resp = requests.get(url, headers=headers, timeout=5)
-            # A SportDB costuma enviar o limite nos cabeçalhos (headers) da resposta
-            total = 1000  # Seu plano atual
-            # Aqui pegamos o que já foi usado (exemplo baseado na estrutura padrão)
-            usado = int(resp.headers.get("X-RateLimit-Used", 0))
-            return usado, total
+            if resp.status_code == 200:
+                dados = resp.json()
+                # Pega o valor 'total_requests' ou similar do JSON deles
+                usado = dados.get("requests", {}).get("current", 0)
+                return usado, 1000
+            return 0, 1000
         except:
             return 0, 1000
     
