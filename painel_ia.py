@@ -33,6 +33,7 @@ if check_password():
     # ==========================================
     try:
         API_KEY = st.secrets["API_KEY"]
+        API_SPORTDB = st.secrets["API_SPORTDB"]
         TOKEN_TELEGRAM = st.secrets["TOKEN_TELEGRAM"]
         CHAT_ID = st.secrets["CHAT_ID"]
     except KeyError:
@@ -472,9 +473,6 @@ if check_password():
         unsafe_allow_html=True
     )
 
-    # ==========================================
-    # 📊 DASHBOARD DE ESTATÍSTICAS E CARDS
-    # ==========================================
     # ==========================================
     # 📊 DASHBOARD DE CARDS (MODO HÍBRIDO)
     # ==========================================
