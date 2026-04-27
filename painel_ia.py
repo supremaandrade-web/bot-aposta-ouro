@@ -125,7 +125,7 @@ if check_password():
         """Calcula a probabilidade exata de um número de gols acontecer usando a fórmula de Poisson."""
         return ((media_gols ** gols_alvo) * math.exp(-media_gols)) / math.factorial(gols_alvo)
     
-    @st.cache_data(ttl=3600 * 24) 
+    @st.cache_data(ttl=86400) # Mantém a tabela na memória por 24 horas
     def buscar_tabela_liga(id_liga, temporada):
         """Gasta 1 crédito para baixar a tabela da liga. Retorna a tabela e o ano utilizado."""
         url = "https://v3.football.api-sports.io/standings"
