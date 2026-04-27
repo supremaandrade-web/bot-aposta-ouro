@@ -313,7 +313,7 @@ if check_password():
     # ==========================================
     # 🎯 MODO SNIPER COM GRAVAÇÃO FORÇADA
     # ==========================================
-    @st.cache_data(ttl=1) # TTL reduzido para 1 segundo para forçar a atualização agora
+    @st.cache_data(ttl=3600) # TTL reduzido para 1 segundo para forçar a atualização agora
     def buscar_jogos_do_dia_filtrados():
         url = "https://v3.football.api-sports.io/fixtures"
         hoje = datetime.now().strftime("%Y-%m-%d")
