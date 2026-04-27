@@ -242,6 +242,20 @@ if check_password():
         except:
             pass
         return 0
+
+    def consultar_creditos_sportdb():
+    """Consulta o limite de requisições na SportDB."""
+    url = "https://api.sportdb.dev/api/flashscore/football" # Endpoint de teste
+    headers = {"X-API-Key": API_SPORTDB}
+    try:
+        resp = requests.get(url, headers=headers, timeout=5)
+        # A SportDB costuma enviar o limite nos cabeçalhos (headers) da resposta
+        total = 1000  # Seu plano atual
+        # Aqui pegamos o que já foi usado (exemplo baseado na estrutura padrão)
+        usado = int(resp.headers.get("X-RateLimit-Used", 0))
+        return usado, total
+    except:
+        return 0, 1000
     
     if 'consultas' not in st.session_state: 
         st.session_state.consultas = sincronizar_creditos_api()
@@ -413,12 +427,19 @@ if check_password():
     
     # --- VISUALIZAÇÃO DE CRÉDITOS ---
     st.sidebar.markdown("---")
-    # Sincroniza o valor real gasto hoje
+    st.sidebar.subheader("💳 Consumo de APIs")
+
+    # API Principal (API-Football)
     st.session_state.consultas = sincronizar_creditos_api()
-    
+    st.sidebar.caption("API-Football (Geral)")
     st.sidebar.progress(min(st.session_state.consultas / 100, 1.0))
-    st.sidebar.write(f"💳 Créditos Hoje: **{st.session_state.consultas}/100**")
-    st.sidebar.caption("Ligas de Ouro ativadas para proteção de créditos.")
+    st.sidebar.write(f"**{st.session_state.consultas}/100**")
+
+    # Nova API (SportDB)
+    usado_sdb, total_sdb = consultar_creditos_sportdb()
+    st.sidebar.caption("SportDB (Odds 2.0+)")
+    st.sidebar.progress(min(usado_sdb / total_sdb, 1.0))
+    st.sidebar.write(f"**{usado_sdb}/{total_sdb}**")
     
     # --- STATUS DE CONEXÃO (MONITOR DE SAÚDE) ---
     st.sidebar.markdown("---")
