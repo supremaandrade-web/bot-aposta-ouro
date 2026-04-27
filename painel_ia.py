@@ -245,7 +245,7 @@ if check_password():
 
     def consultar_creditos_sportdb():
         """Consulta o limite de requisições na SportDB usando o endpoint de estatísticas."""
-        url = "https://api.sportdb.dev/api/v1/usage" # Endpoint específico de uso
+        url = "https://api.sportdb.dev/api/flashscore/football" # Endpoint específico de uso
         headers = {"X-API-Key": API_SPORTDB}
         try:
             resp = requests.get(url, headers=headers, timeout=5)
