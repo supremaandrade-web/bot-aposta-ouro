@@ -700,4 +700,4 @@ if check_password():
     agora_hora = datetime.now().strftime("%H:%M")
     if "23:45" <= agora_hora <= "23:59":
         enviar_resumo_diario()
-    st_autorefresh(interval=900000, key="auto_refresh")
+    st_autorefresh(interval=1800000, key="auto_refresh")
