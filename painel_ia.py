@@ -475,44 +475,32 @@ if check_password():
     # ==========================================
     # 📊 DASHBOARD DE ESTATÍSTICAS E CARDS
     # ==========================================
+    # ==========================================
+    # 📊 DASHBOARD DE CARDS (MODO HÍBRIDO)
+    # ==========================================
     st.title("👑 PAINEL IA SUPREMA - VISÃO SUPER-HUMANA")    
     url_planilha = "https://docs.google.com/spreadsheets/d/1Y4D4t2svOeT24vnKcWnzDcwz7tPyRvkeDP8sSm_xPkQ/edit?usp=sharing"
-    
-    # --- BOTÃO DE RESET (ALINHADO À ESQUERDA) ---
-    if st.button("🚨 RESETAR MEMÓRIA E REGRAVAR PLANILHA"):
-        st.session_state.sinais_enviados = [] 
-        st.cache_data.clear()
-        st.success("Memória limpa! Agora clique em 'Forçar Busca de Jogos' abaixo.")
-    
-    # --- DASHBOARD DE ESTATÍSTICAS ---
+
+    # --- 1. MOSTRAR CARDS PELA MEMÓRIA (RESOLVE O PROBLEMA DOS CARDS INVISÍVEIS) ---
+    if st.session_state.aposta_pendente:
+        st.header("🏟️ Apostas Aguardando Resultado")
+        for jogo in st.session_state.aposta_pendente:
+            with st.expander(f"⏳ {jogo['casa']} x {jogo['fora']}", expanded=True):
+                st.write(f"**Entrada:** {jogo['previsao']} | **Odd:** {jogo.get('odd', '1.85')}")
+                st.write(f"**Valor Sugerido:** R$ {jogo['valor']}")
+    else:
+        st.info("Aguardando o próximo sinal da IA para gerar os cards na tela...")
+
+    # --- 2. MOSTRAR HISTÓRICO PELA PLANILHA (OPCIONAL/APENAS LEITURA) ---
     try:
         conn = st.connection("gsheets", type=GSheetsConnection)
-        # TTL=0 é obrigatório para os cards aparecerem na hora
         df_historico = conn.read(spreadsheet=url_planilha, ttl=0)
-        
         if not df_historico.empty:
-            col_res = 'Resultado' if 'Resultado' in df_historico.columns else 'Res.'
-            df_historico[col_res] = df_historico[col_res].astype(str).fillna("")
-    
-            st.subheader("📊 Performance em Tempo Real")
-            st.metric("Total de Sinais Gravados", len(df_historico))
-    
             st.divider()
-            st.header("🏟️ Apostas Aguardando Resultado")
-            
-            # Filtra apenas as pendentes para exibir nos cards
-            df_pendentes = df_historico[~df_historico[col_res].str.contains('GANHA|GREEN|PERDIDA|RED', case=False, na=False)]
-            
-            if not df_pendentes.empty:
-                for index, jogo in df_pendentes.iterrows():
-                    with st.expander(f"⏳ {jogo.get('Casa')} x {jogo.get('Fora')}", expanded=True):
-                        st.write(f"**Entrada:** {jogo.get('Previsao_IA')} | **Data:** {jogo.get('Data')}")
-            else:
-                st.info("Nenhuma aposta pendente gravada na planilha.")
-        else:
-            st.info("Planilha vazia. O robô aguarda o próximo sinal para gravar os cards.")
+            st.subheader("📊 Histórico Gravado na Planilha")
+            st.metric("Total de Sinais Gravados", len(df_historico))
     except Exception as e:
-        st.error(f"Erro ao carregar dados: {e}")
+        st.caption(f"Nota: Histórico via Planilha indisponível no momento.")
     # ⚽💰 Gráfico Superior de Título (Troféu VIP e Bola Estáveis)
     st.markdown(
         """
