@@ -244,18 +244,18 @@ if check_password():
         return 0
 
     def consultar_creditos_sportdb():
-    """Consulta o limite de requisições na SportDB."""
-    url = "https://api.sportdb.dev/api/flashscore/football" # Endpoint de teste
-    headers = {"X-API-Key": API_SPORTDB}
-    try:
-        resp = requests.get(url, headers=headers, timeout=5)
-        # A SportDB costuma enviar o limite nos cabeçalhos (headers) da resposta
-        total = 1000  # Seu plano atual
-        # Aqui pegamos o que já foi usado (exemplo baseado na estrutura padrão)
-        usado = int(resp.headers.get("X-RateLimit-Used", 0))
-        return usado, total
-    except:
-        return 0, 1000
+        """Consulta o limite de requisições na SportDB."""
+        url = "https://api.sportdb.dev/api/flashscore/football" # Endpoint de teste
+        headers = {"X-API-Key": API_SPORTDB}
+        try:
+            resp = requests.get(url, headers=headers, timeout=5)
+            # A SportDB costuma enviar o limite nos cabeçalhos (headers) da resposta
+            total = 1000  # Seu plano atual
+            # Aqui pegamos o que já foi usado (exemplo baseado na estrutura padrão)
+            usado = int(resp.headers.get("X-RateLimit-Used", 0))
+            return usado, total
+        except:
+            return 0, 1000
     
     if 'consultas' not in st.session_state: 
         st.session_state.consultas = sincronizar_creditos_api()
