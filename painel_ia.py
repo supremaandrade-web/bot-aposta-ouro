@@ -589,63 +589,42 @@ if check_password():
                     media_c, ano_base = obter_media_gols_real(id_liga, temporada, casa)
                     media_f, _ = obter_media_gols_real(id_liga, temporada, fora)
                     
-                    # 2. Recebe as QUATRO previsões da IA
-                    confianca_vit_casa, confianca_vit_fora, confianca_over15, confianca_over25 = analisar_jogo_matematicamente_real(media_c, media_f)
+                    # 2. NOVA CHAMADA: Recebe o MELHOR mercado da IA (BTTS, O25 ou O15)
+                    mercado_ia, confianca_ia, odd_ia = analisar_jogo_matematicamente_real(media_c, media_f)
                     valor_entrada = round(stake_base * st.session_state.multiplier, 2)
                     
-                    # 3. FILTRO 1: Match Odds (Vitória Casa) > 75%
-                    id_sinal_vit_c = f"{id_jogo}_VC"
-                    if confianca_vit_casa > 75 and id_sinal_vit_c not in st.session_state.sinais_enviados:
-                        enviar_sinal_vip("PRE_MATCH", casa, fora, confianca_vit_casa, "Vitória Casa", valor_entrada, horario_jogo)
-                        st.session_state.sinais_enviados.append(id_sinal_vit_c)
-
-                        registrar_resultado({'casa': casa, 'fora': fora, 'previsao': "1.5 Gols", 'odd': 1.85}, "PENDENTE", 0)
+                    # 3. SÓ PROCESSA SE A IA ENCONTRAR UMA OPORTUNIDADE REAL
+                    if mercado_ia:
+                        id_sinal = f"{id_jogo}_{mercado_ia.replace(' ', '_')}"
                         
-                        st.session_state.aposta_pendente.append({'id': id_jogo, 'casa': casa, 'fora': fora, 'previsao': "Vitória Casa", 'valor': valor_entrada, 'odd': 1.85, 'data_api': data_api})
-                        add_log(f"🚀 SINAL VITÓRIA CASA: {casa} ({confianca_vit_casa}%) | Temp: {ano_base}")
-                        
-                    # 4. FILTRO 2: Match Odds (Vitória Visitante) > 75%
-                    id_sinal_vit_f = f"{id_jogo}_VF"
-                    if confianca_vit_fora > 75 and id_sinal_vit_f not in st.session_state.sinais_enviados:
-                        enviar_sinal_vip("PRE_MATCH", casa, fora, confianca_vit_fora, "Vitória Visitante", valor_entrada, horario_jogo)
-                        st.session_state.sinais_enviados.append(id_sinal_vit_f)
-
-                        registrar_resultado({'casa': casa, 'fora': fora, 'previsao': "1.5 Gols", 'odd': 1.85}, "PENDENTE", 0)
-                        
-                        st.session_state.aposta_pendente.append({'id': id_jogo, 'casa': casa, 'fora': fora, 'previsao': "Vitória Visitante", 'valor': valor_entrada, 'odd': 1.85, 'data_api': data_api})
-                        add_log(f"🚀 SINAL VITÓRIA VISITANTE: {fora} ({confianca_vit_fora}%) | Temp: {ano_base}")
-
-                    # NOVO FILTRO: VITÓRIA COM ODD ALTA (> 2.0)
-                    if 60 < confianca_vit_casa < 75: # Jogos equilibrados costumam ter Odds altas
-                        if validar_odd_valor(casa):
-                            enviar_sinal_vip("PRE_MATCH", casa, fora, confianca_vit_casa, "💎 VITÓRIA VALOR (ODD 2.0+)", valor_entrada, horario_jogo, odd="2.10")
-                            st.session_state.aposta_pendente.append({'casa': casa, 'fora': fora, 'previsao': "Vitória Valor", 'valor': valor_entrada, 'odd': 2.10})
-                            add_log(f"💎 SINAL ODD ALTA: {casa} ({confianca_vit_casa}%)")
-                        
-                    # 5. FILTRO 3: Over 1.5 Gols > 80%
-                    id_sinal_over15 = f"{id_jogo}_O15"
-                    if confianca_over15 > 80 and id_sinal_over15 not in st.session_state.sinais_enviados:
-                        enviar_sinal_vip("PRE_MATCH", casa, fora, confianca_over15, "1.5 Gols", valor_entrada, horario_jogo)
-                        st.session_state.sinais_enviados.append(id_sinal_over15)
-                        
-                        # --- LINHA VITAL: Isso faz o card aparecer na tela ---
-                        registrar_resultado({'casa': casa, 'fora': fora, 'previsao': "1.5 Gols", 'odd': 1.85}, "PENDENTE", 0)
-                        
-                        st.session_state.aposta_pendente.append({'id': id_jogo, 'casa': casa, 'fora': fora, 'previsao': "1.5 Gols", 'valor': valor_entrada, 'odd': 1.85, 'data_api': data_api})
-                        add_log(f"⚽ SINAL O1.5: {casa} x {fora} ({confianca_over15}%) | GRAVADO NA PLANILHA")
-                        time.sleep(1) # Delay de segurança para o Google Sheets
-
-                    # NOVO FILTRO: OVER 2.5 (ODD MÉDIA 2.05)
-                    if confianca_over25 > 68: # IA confiante em 3 ou mais gols
-                        enviar_sinal_vip("PRE_MATCH", casa, fora, confianca_over25, "🔥 OVER 2.5 GOLS (LUCRO ALTO)", valor_entrada, horario_jogo, odd="2.05")
-                        st.session_state.aposta_pendente.append({'casa': casa, 'fora': fora, 'previsao': "Over 2.5", 'valor': valor_entrada, 'odd': 2.05})
-                        add_log(f"🔥 SINAL OVER 2.5: {casa} x {fora}")
-    
-                    # 6. FILTRO 4: Over 2.5 Gols > 70% (NOVO! Exige um pouco menos de % porque é mais difícil acontecer)
-                    id_sinal_over25 = f"{id_jogo}_O25"
-                    if confianca_over25 > 70 and id_sinal_over25 not in st.session_state.sinais_enviados:
-                        enviar_sinal_vip("PRE_MATCH", casa, fora, confianca_over25, "2.5 Gols", valor_entrada, horario_jogo, odd="2.00") # Odd sugerida maior
-                        st.session_state.sinais_enviados.append(id_sinal_over25)
+                        if id_sinal not in st.session_state.sinais_enviados:
+                            # ENVIA PARA O TELEGRAM (Usa a função VIP que já configuramos)
+                            sucesso = enviar_sinal_vip("PRE_MATCH", casa, fora, confianca_ia, mercado_ia, valor_entrada, horario_jogo, odd=str(odd_ia))
+                            
+                            if sucesso:
+                                st.session_state.sinais_enviados.append(id_sinal)
+                                
+                                # GRAVA NA PLANILHA (Histórico oficial)
+                                registrar_resultado({'casa': casa, 'fora': fora, 'previsao': mercado_ia, 'odd': odd_ia}, "PENDENTE", 0)
+                                
+                                # ADICIONA AO CARD DA TELA (Visualização imediata)
+                                st.session_state.aposta_pendente.append({
+                                    'id': id_jogo, 
+                                    'casa': casa, 
+                                    'fora': fora, 
+                                    'previsao': mercado_ia, 
+                                    'valor': valor_entrada, 
+                                    'odd': odd_ia, 
+                                    'data_api': data_api
+                                })
+                                
+                                add_log(f"🚀 SINAL VIP: {mercado_ia} em {casa} x {fora} ({confianca_ia}%)")
+                                time.sleep(1) # Delay de segurança para o Google Sheets
+                    
+                    # Se a IA não atingiu os % mínimos, registra apenas no log do sistema
+                    elif id_jogo not in st.session_state.jogos_ignorados:
+                        add_log(f"⚠️ IGNORADO: {casa} x {fora} (Confiança insuficiente)")
+                        st.session_state.jogos_ignorados.append(id_jogo)
 
                         registrar_resultado({'casa': casa, 'fora': fora, 'previsao': "2.5 Gols", 'odd': 2.00}, "PENDENTE", 0)
                         
