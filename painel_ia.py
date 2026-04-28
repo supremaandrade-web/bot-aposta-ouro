@@ -244,20 +244,25 @@ if check_password():
         return 0
 
     def consultar_creditos_sportdb():
-        """Consulta o limite de requisições na SportDB."""
-        # Como o endpoint de usage pode falhar, vamos pegar do header de uma requisição simples
+        """Consulta o limite real de requisições na SportDB via Headers."""
         url = "https://api.sportdb.dev/api/flashscore/football"
-        headers = {"X-API-Key": API_SPORTDB}
+        headers = {"X-API-Key": st.secrets["API_SPORTDB"]} # Certifique-se que o nome na secret é este
         try:
-            resp = requests.get(url, headers=headers, timeout=10)
-            # A SportDB envia o consumo nos headers da resposta
-            usado = int(resp.headers.get("X-RateLimit-Used", 0))
-            total = int(resp.headers.get("X-RateLimit-Limit", 1000))
-            if usado == 0: # Se o header falhar, tentamos o seu dashboard manual
-                return 12, 1000 # Valor fixo do seu print atual para destravar
+            # Fazemos uma chamada leve apenas para pegar os cabeçalhos (headers)
+            response = requests.get(url, headers=headers, timeout=5)
+            
+            # A SportDB informa o consumo nos Headers da resposta:
+            # X-RateLimit-Limit: Total de créditos (1000)
+            # X-RateLimit-Remaining: Quanto ainda sobra
+            
+            total = int(response.headers.get("X-RateLimit-Limit", 1000))
+            restante = int(response.headers.get("X-RateLimit-Remaining", 0))
+            usado = total - restante
+            
             return usado, total
-        except:
-            return 12, 1000
+        except Exception as e:
+            print(f"Erro ao sincronizar créditos: {e}")
+            return 0, 1000 # Retorno padrão caso a API falhe
     
     if 'consultas' not in st.session_state: 
         st.session_state.consultas = sincronizar_creditos_api()
