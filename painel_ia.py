@@ -615,6 +615,7 @@ if check_password():
                         
                         st.session_state.aposta_pendente.append({'id': id_jogo, 'casa': casa, 'fora': fora, 'previsao': "1.5 Gols", 'valor': valor_entrada, 'odd': 1.85, 'data_api': data_api})
                         add_log(f"⚽ SINAL O1.5: {casa} x {fora} ({confianca_over15}%) | GRAVADO NA PLANILHA")
+                        time.sleep(1) # Delay de segurança para o Google Sheets
 
                     # NOVO FILTRO: OVER 2.5 (ODD MÉDIA 2.05)
                     if confianca_over25 > 68: # IA confiante em 3 ou mais gols
