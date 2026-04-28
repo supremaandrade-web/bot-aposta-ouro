@@ -243,26 +243,26 @@ if check_password():
             pass
         return 0
 
-    try:
-        import time
-        # Força a API a ignorar o cache usando o tempo atual
-        timestamp = int(time.time())
-        url = "https://api.sportdb.dev/api/flashscore/football"
-        
-        # Faz a chamada com o parâmetro de tempo
-        response = requests.get(f"{url}?t={timestamp}", headers=headers, timeout=10)
-        
-        total = int(response.headers.get("X-RateLimit-Limit", 1000))
-        restante = response.headers.get("X-RateLimit-Remaining")
-        
-        if restante is not None:
-            usado = total - int(restante)
-            # Retorna o valor real, mas garante que não mostre menos que 18
-            return max(usado, 18), total
+        try:
+            import time
+            # Força a API a ignorar o cache usando o tempo atual
+            timestamp = int(time.time())
+            url = "https://api.sportdb.dev/api/flashscore/football"
             
-        return 18, 1000
-    except:
-        return 18, 1000
+            # Faz a chamada com o parâmetro de tempo
+            response = requests.get(f"{url}?t={timestamp}", headers=headers, timeout=10)
+            
+            total = int(response.headers.get("X-RateLimit-Limit", 1000))
+            restante = response.headers.get("X-RateLimit-Remaining")
+            
+            if restante is not None:
+                usado = total - int(restante)
+                # Retorna o valor real, mas garante que não mostre menos que 18
+                return max(usado, 18), total
+                
+            return 18, 1000
+        except:
+            return 18, 1000
     
     if 'consultas' not in st.session_state: 
         st.session_state.consultas = sincronizar_creditos_api()
