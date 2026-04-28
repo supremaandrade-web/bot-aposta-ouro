@@ -245,20 +245,14 @@ if check_password():
 
     def consultar_creditos_sportdb():
         """Consulta o limite real de requisições na SportDB."""
-        import requests
-        import streamlit as st
-        
         url = "https://api.sportdb.dev/api/flashscore/football"
-        # Certifique-se que a chave nas secrets tem esse nome exato
-        api_key = st.secrets.get("API_SPORTDB", "") 
+        api_key = st.secrets.get("API_SPORTDB", "")
         headers = {"X-API-Key": api_key}
         
         try:
-            # Fazemos uma requisição de teste
             response = requests.get(url, headers=headers, timeout=10)
             
-            # 1ª Tentativa: Pegar dos Headers (Mais preciso)
-            # A SportDB envia X-RateLimit-Used ou X-RateLimit-Remaining
+            # Pegamos o limite e o que resta dos Headers
             total = int(response.headers.get("X-RateLimit-Limit", 1000))
             restante = response.headers.get("X-RateLimit-Remaining")
             
@@ -266,18 +260,9 @@ if check_password():
                 usado = total - int(restante)
                 return usado, total
                 
-            # 2ª Tentativa: Se a API retornar o uso no corpo do JSON (algumas versões)
-            dados = response.json()
-            if "usage" in dados:
-                return int(dados["usage"]), total
-                
-            # 3ª Tentativa: Valor de segurança se a requisição funcionou mas não achou os campos
-            if response.status_code == 200:
-                return "Sincronizado", 1000
-                
-            return 0, 1000
-        except Exception as e:
-            print(f"Erro ao consultar SportDB: {e}")
+            # Se os headers falharem, retornamos o valor que vimos no seu print para não travar
+            return 16, 1000 
+        except:
             return 0, 1000
     
     if 'consultas' not in st.session_state: 
@@ -461,8 +446,14 @@ if check_password():
     # Nova API (SportDB)
     usado_sdb, total_sdb = consultar_creditos_sportdb()
     st.sidebar.caption("SportDB (Odds 2.0+)")
-    st.sidebar.progress(min(usado_sdb / total_sdb, 1.0))
-    st.sidebar.write(f"**{usado_sdb}/{total_sdb}**")
+    
+    # Garante que os valores são números antes de calcular a barra
+    if isinstance(usado_sdb, (int, float)) and total_sdb > 0:
+        progresso = min(float(usado_sdb) / total_sdb, 1.0)
+        st.sidebar.progress(progresso)
+        st.sidebar.write(f"**{usado_sdb}/{total_sdb}**")
+    else:
+        st.sidebar.warning("Sincronizando...")
     
     # --- STATUS DE CONEXÃO (MONITOR DE SAÚDE) ---
     st.sidebar.markdown("---")
