@@ -244,19 +244,20 @@ if check_password():
         return 0
 
     def consultar_creditos_sportdb():
-        """Consulta o limite de requisições na SportDB usando o endpoint de estatísticas."""
-        url = "https://api.sportdb.dev/api/v1/usage" # Endpoint específico de uso
+        url = "https://api.sportdb.dev/api/v1/usage"
         headers = {"X-API-Key": API_SPORTDB}
         try:
-            resp = requests.get(url, headers=headers, timeout=5)
+            # Aumentamos o timeout para 10s para evitar o '0/1000' por lentidão
+            resp = requests.get(url, headers=headers, timeout=10) 
             if resp.status_code == 200:
                 dados = resp.json()
-                # Pega o valor 'total_requests' ou similar do JSON deles
+                # A SportDB às vezes muda a estrutura. Vamos garantir:
                 usado = dados.get("requests", {}).get("current", 0)
-                return usado, 1000
-            return 0, 1000
-        except:
-            return 0, 1000
+                total = dados.get("requests", {}).get("limit", 1000)
+                return usado, total
+        except Exception as e:
+            print(f"Erro SportDB: {e}")
+        return 0, 1000
     
     if 'consultas' not in st.session_state: 
         st.session_state.consultas = sincronizar_creditos_api()
