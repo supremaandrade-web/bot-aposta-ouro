@@ -232,19 +232,16 @@ if check_password():
             add_log(f"⚠️ Erro ao salvar na Planilha: {e}")
     
     def sincronizar_creditos_api():
-    """Consulta o servidor oficial da API Football para saber o gasto real."""
-    import requests
-    import streamlit as st
-    try:
-        url = "https://v3.football.api-sports.io/status"
-        headers = {'x-apisports-key': st.secrets["API_KEY"]}
-        resp = requests.get(url, headers=headers, timeout=10)
-        if resp.status_code == 200:
-            gastos_hoje = resp.json().get('response', {}).get('requests', {}).get('current', 0)
-            return gastos_hoje
-    except:
-        pass
-    return 0
+        """Consulta o servidor oficial da API para saber o gasto real do dia (Essa consulta é Grátis)."""
+        try:
+            url = "https://v3.football.api-sports.io/status"
+            resp = requests.get(url, headers={'x-apisports-key': API_KEY})
+            if resp.status_code == 200:
+                gastos_hoje = resp.json().get('response', {}).get('requests', {}).get('current', 0)
+                return gastos_hoje
+        except:
+            pass
+        return 0
 
     def consultar_creditos_sportdb():
         """Consulta o limite real de requisições na SportDB com Cache Buster."""
