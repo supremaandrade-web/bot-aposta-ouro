@@ -244,25 +244,41 @@ if check_password():
         return 0
 
     def consultar_creditos_sportdb():
-        """Consulta o limite real de requisições na SportDB via Headers."""
+        """Consulta o limite real de requisições na SportDB."""
+        import requests
+        import streamlit as st
+        
         url = "https://api.sportdb.dev/api/flashscore/football"
-        headers = {"X-API-Key": st.secrets["API_SPORTDB"]} # Certifique-se que o nome na secret é este
+        # Certifique-se que a chave nas secrets tem esse nome exato
+        api_key = st.secrets.get("API_SPORTDB", "") 
+        headers = {"X-API-Key": api_key}
+        
         try:
-            # Fazemos uma chamada leve apenas para pegar os cabeçalhos (headers)
-            response = requests.get(url, headers=headers, timeout=5)
+            # Fazemos uma requisição de teste
+            response = requests.get(url, headers=headers, timeout=10)
             
-            # A SportDB informa o consumo nos Headers da resposta:
-            # X-RateLimit-Limit: Total de créditos (1000)
-            # X-RateLimit-Remaining: Quanto ainda sobra
-            
+            # 1ª Tentativa: Pegar dos Headers (Mais preciso)
+            # A SportDB envia X-RateLimit-Used ou X-RateLimit-Remaining
             total = int(response.headers.get("X-RateLimit-Limit", 1000))
-            restante = int(response.headers.get("X-RateLimit-Remaining", 0))
-            usado = total - restante
+            restante = response.headers.get("X-RateLimit-Remaining")
             
-            return usado, total
+            if restante is not None:
+                usado = total - int(restante)
+                return usado, total
+                
+            # 2ª Tentativa: Se a API retornar o uso no corpo do JSON (algumas versões)
+            dados = response.json()
+            if "usage" in dados:
+                return int(dados["usage"]), total
+                
+            # 3ª Tentativa: Valor de segurança se a requisição funcionou mas não achou os campos
+            if response.status_code == 200:
+                return "Sincronizado", 1000
+                
+            return 0, 1000
         except Exception as e:
-            print(f"Erro ao sincronizar créditos: {e}")
-            return 0, 1000 # Retorno padrão caso a API falhe
+            print(f"Erro ao consultar SportDB: {e}")
+            return 0, 1000
     
     if 'consultas' not in st.session_state: 
         st.session_state.consultas = sincronizar_creditos_api()
