@@ -178,30 +178,32 @@ if check_password():
         return 1.3, temp_usada
     
     def analisar_jogo_matematicamente_real(media_gols_casa, media_gols_fora):
-        """Retorna TRÊS confianças: Vitória Casa, Vitória Visitante e Over 1.5 Gols."""
+        """Retorna a MELHOR previsão baseada em Poisson e Ambas Marcam."""
         
-        # LÓGICA GERAL DE GOLS ZERADOS
+        # 1. Cálculos Base (Poisson)
         prob_casa_0 = calcular_poisson(media_gols_casa, 0)
         prob_fora_0 = calcular_poisson(media_gols_fora, 0)
+        media_total = media_gols_casa + media_gols_fora
         
-        # 1. VITÓRIA CASA (Casa faz gol E Fora faz zero)
-        prob_casa_marca = 1 - prob_casa_0
-        confianca_vit_casa = (prob_casa_marca * prob_fora_0) * 100
+        prob_0_gols = calcular_poisson(media_total, 0)
+        prob_1_gol = calcular_poisson(media_total, 1)
+        prob_2_gols = calcular_poisson(media_total, 2)
+    
+        # 2. Probabilidades Percentuais
+        conf_over15 = (1 - (prob_0_gols + prob_1_gol)) * 100
+        conf_over25 = (1 - (prob_0_gols + prob_1_gol + prob_2_gols)) * 100
+        # Ambas Marcam: Casa marca (1 - prob_casa_0) E Fora marca (1 - prob_fora_0)
+        conf_btts = ((1 - prob_casa_0) * (1 - prob_fora_0)) * 100
         
-        # 2. VITÓRIA VISITANTE (Fora faz gol E Casa faz zero)
-        prob_fora_marca = 1 - prob_fora_0
-        confianca_vit_fora = (prob_fora_marca * prob_casa_0) * 100
+        # 3. Lógica Sniper (Escolhe apenas o melhor mercado para não repetir sinais)
+        if conf_over25 > 72:
+            return "🔥 Over 2.5 Gols", round(conf_over25, 1), 2.05
+        elif conf_btts > 70:
+            return "⚽ Ambas Marcam (BTTS)", round(conf_btts, 1), 1.95
+        elif conf_over15 > 85:
+            return "✅ Over 1.5 Gols", round(conf_over15, 1), 1.35
         
-        # 3. OVER 1.5 E OVER 2.5 GOLS
-        media_total_jogo = media_gols_casa + media_gols_fora
-        prob_0_gols = calcular_poisson(media_total_jogo, 0)
-        prob_1_gol = calcular_poisson(media_total_jogo, 1)
-        prob_2_gols = calcular_poisson(media_total_jogo, 2)
-        
-        confianca_over15 = (1 - (prob_0_gols + prob_1_gol)) * 100
-        confianca_over25 = (1 - (prob_0_gols + prob_1_gol + prob_2_gols)) * 100
-        
-        return round(confianca_vit_casa, 1), round(confianca_vit_fora, 1), round(confianca_over15, 1), round(confianca_over25, 1)
+        return None, 0, 0 # Se nada for muito confiante, não manda sinal
         
     # ==========================================
     # 📊 CONEXÃO COM GOOGLE SHEETS (MEMÓRIA NA NUVEM)
