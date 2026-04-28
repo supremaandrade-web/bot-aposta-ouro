@@ -231,8 +231,23 @@ if check_password():
         except Exception as e:
             add_log(f"⚠️ Erro ao salvar na Planilha: {e}")
     
+    def sincronizar_creditos_api():
+    """Consulta o servidor oficial da API Football para saber o gasto real."""
+    import requests
+    import streamlit as st
+    try:
+        url = "https://v3.football.api-sports.io/status"
+        headers = {'x-apisports-key': st.secrets["API_KEY"]}
+        resp = requests.get(url, headers=headers, timeout=10)
+        if resp.status_code == 200:
+            gastos_hoje = resp.json().get('response', {}).get('requests', {}).get('current', 0)
+            return gastos_hoje
+    except:
+        pass
+    return 0
+
     def consultar_creditos_sportdb():
-        """Consulta o limite real de requisições na SportDB."""
+        """Consulta o limite real de requisições na SportDB com Cache Buster."""
         import requests
         import time
         import streamlit as st
@@ -242,9 +257,8 @@ if check_password():
         headers = {"X-API-Key": api_key}
         
         try:
-            # Força a API a ignorar o cache usando o tempo atual
             timestamp = int(time.time())
-            # Faz a chamada com o parâmetro de tempo
+            # O '?t=' força a API a ignorar o cache e dar o valor real do site
             response = requests.get(f"{url}?t={timestamp}", headers=headers, timeout=10)
             
             total = int(response.headers.get("X-RateLimit-Limit", 1000))
@@ -252,8 +266,7 @@ if check_password():
             
             if restante is not None:
                 usado = total - int(restante)
-                # Retorna o valor real, mas garante que não mostre menos que 18
-                return max(usado, 18), total
+                return max(usado, 18), total # Garante o mínimo de 18 que já vimos
                 
             return 18, 1000
         except:
