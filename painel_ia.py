@@ -231,24 +231,19 @@ if check_password():
         except Exception as e:
             add_log(f"⚠️ Erro ao salvar na Planilha: {e}")
     
-    def sincronizar_creditos_api():
-        """Consulta o servidor oficial da API para saber o gasto real do dia (Essa consulta é Grátis)."""
+    def consultar_creditos_sportdb():
+        """Consulta o limite real de requisições na SportDB."""
+        import requests
+        import time
+        import streamlit as st
+        
+        url = "https://api.sportdb.dev/api/flashscore/football"
+        api_key = st.secrets.get("API_SPORTDB", "")
+        headers = {"X-API-Key": api_key}
+        
         try:
-            url = "https://v3.football.api-sports.io/status"
-            resp = requests.get(url, headers={'x-apisports-key': API_KEY})
-            if resp.status_code == 200:
-                gastos_hoje = resp.json().get('response', {}).get('requests', {}).get('current', 0)
-                return gastos_hoje
-        except:
-            pass
-        return 0
-
-        try:
-            import time
             # Força a API a ignorar o cache usando o tempo atual
             timestamp = int(time.time())
-            url = "https://api.sportdb.dev/api/flashscore/football"
-            
             # Faz a chamada com o parâmetro de tempo
             response = requests.get(f"{url}?t={timestamp}", headers=headers, timeout=10)
             
