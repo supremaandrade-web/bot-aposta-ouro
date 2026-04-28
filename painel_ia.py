@@ -250,7 +250,7 @@ if check_password():
         headers = {"X-API-Key": api_key}
         
         try:
-        import time
+            import time
             # Força a API a ignorar o cache usando o tempo atual
             timestamp = int(time.time())
             url = "https://api.sportdb.dev/api/flashscore/football"
