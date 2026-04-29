@@ -433,6 +433,14 @@ if check_password():
                         conn.update(spreadsheet=url_planilha, data=df_up)
                         
                         add_log(f"🏁 RESULTADO: {casa_api} x {fora_api} foi {resultado_final} ({gols_casa}-{gols_fora})")
+                        
+                        # 🧹 NOVO: LIMPEZA AUTOMÁTICA DO CARD NA TELA
+                        if 'aposta_pendente' in st.session_state:
+                            st.session_state.aposta_pendente = [
+                                aposta for aposta in st.session_state.aposta_pendente 
+                                if not (aposta['casa'] == casa_api and aposta['fora'] == fora_api)
+                            ]
+                            
                         return
         except Exception as e:
             add_log(f"⚠️ Erro ao auditar: {e}")
