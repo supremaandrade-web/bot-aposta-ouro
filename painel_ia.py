@@ -747,7 +747,7 @@ if check_password():
             qtd_pendentes = 0
         
         if qtd_pendentes > 0:
-            st.warning(f"Existem {qtd_pendentes} apostas aguardando resultado na Planilha.")
+            st.warning(f"Existem {qtd_pendentes} apostas aguardando resultado.")
             
             # 🚨 CORREÇÃO CRÍTICA: Agora o Auditor trabalha sozinho se o Piloto estiver ON!
             if piloto_automatico or st.button("🔍 Auditar Resultados na API Agora"):
