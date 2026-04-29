@@ -559,8 +559,10 @@ if check_password():
 
     # --- FUNÇÃO DE LOGS COM REFRESH DE PLANILHA ---
     def add_log(msg):
-        """Adiciona mensagem ao log e verifica se há necessidade de forçar escrita."""
-        st.session_state.log.insert(0, f"[{datetime.now().strftime('%H:%M:%S')}] {msg}")
+        """Adiciona mensagem ao log com o horário correto do Brasil (UTC-3)."""
+        hora_brasilia = datetime.utcnow() - timedelta(hours=3)
+        st.session_state.log.insert(0, f"[{hora_brasilia.strftime('%H:%M:%S')}] {msg}")
+        
         # Se o log indicar que um sinal foi enviado, tentamos limpar o cache da planilha
         if "SINAL" in msg.upper():
             st.cache_data.clear()
