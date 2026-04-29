@@ -4,7 +4,7 @@ import pandas as pd
 import time
 import math
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from streamlit_autorefresh import st_autorefresh
 from streamlit_gsheets import GSheetsConnection
 # --- FUNÇÃO DE DEFESA (TELA DE LOGIN) ---
@@ -283,7 +283,11 @@ if check_password():
     if 'multiplier' not in st.session_state: st.session_state.multiplier = 1.0
     if 'jogos_ignorados' not in st.session_state: st.session_state.jogos_ignorados = []
     def add_log(msg):
-        st.session_state.log.insert(0, f"[{datetime.now().strftime('%H:%M:%S')}] {msg}")
+        """Adiciona mensagem ao log com o horário correto do Brasil (UTC-3)."""
+        hora_brasilia = datetime.utcnow() - timedelta(hours=3)
+        st.session_state.log.insert(0, f"[{hora_brasilia.strftime('%H:%M:%S')}] {msg}")
+        if "SINAL" in msg.upper():
+            st.cache_data.clear()
     
     # ==========================================
     # 👑 MENSAGENS PREMIUM (TELEGRAM)
@@ -595,15 +599,22 @@ if check_password():
     st.title("👑 PAINEL IA SUPREMA - VISÃO SUPER-HUMANA")    
     url_planilha = "https://docs.google.com/spreadsheets/d/1Y4D4t2svOeT24vnKcWnzDcwz7tPyRvkeDP8sSm_xPkQ/edit?usp=sharing"
 
-    # --- 1. MOSTRAR CARDS PELA MEMÓRIA (RESOLVE O PROBLEMA DOS CARDS INVISÍVEIS) ---
-    if st.session_state.aposta_pendente:
-        st.header("🏟️ Apostas Aguardando Resultado")
-        for jogo in st.session_state.aposta_pendente:
-            with st.expander(f"⏳ {jogo['casa']} x {jogo['fora']}", expanded=True):
-                st.write(f"**Entrada:** {jogo['previsao']} | **Odd:** {jogo.get('odd', '1.85')}")
-                st.write(f"**Valor Sugerido:** R$ {jogo['valor']}")
-    else:
-        st.info("Aguardando o próximo sinal da IA para gerar os cards na tela...")
+    # --- 1. MOSTRAR CARDS PELA PLANILHA (NUNCA SOMEM AO ATUALIZAR) ---
+    try:
+        df_pendentes = conn.read(spreadsheet=url_planilha, ttl=0)
+        # Filtra apenas os jogos que ainda estão como PENDENTE
+        df_filtrado = df_pendentes[df_pendentes['Resultado'] == 'PENDENTE']
+        
+        if not df_filtrado.empty:
+            st.header(f"🏟️ Apostas Aguardando Resultado ({len(df_filtrado)})")
+            for index, jogo in df_filtrado.iterrows():
+                with st.expander(f"⏳ {jogo['Casa']} x {jogo['Fora']}", expanded=True):
+                    st.write(f"**Entrada:** {jogo['Previsao_IA']} | **Odd:** {jogo['Odd']}")
+                    st.caption("Status: PENDENTE (O Cron-job irá auditar este jogo ao final da partida)")
+        else:
+            st.info("Nenhuma aposta pendente no momento. Aguardando a IA encontrar novas oportunidades...")
+    except Exception as e:
+        st.error("Erro ao carregar os cards da planilha.")
 
     # --- 2. MOSTRAR HISTÓRICO PELA PLANILHA (OPCIONAL/APENAS LEITURA) ---
     try:
