@@ -632,7 +632,7 @@ if check_password():
                         add_log(f"🔥 SINAL O2.5: {casa} x {fora} ({confianca_over25}%) | Temp: {ano_base}")
                         
                     # Se TUDO for ruim, avisa no log APENAS UMA VEZ e põe na lista negra
-                    if confianca_vit_casa <= 75 and confianca_vit_fora <= 75 and confianca_over15 <= 80 and confianca_over25 <= 70:
+                        if confianca_vit_casa <= 75 and confianca_vit_fora <= 75 and confianca_over15 <= 80 and confianca_over25 <= 70:
                         if id_jogo not in st.session_state.jogos_ignorados:
                             add_log(f"⚠️ IGNORADO: {casa} x {fora} | V.C: {confianca_vit_casa}% | V.F: {confianca_vit_fora}% | O1.5: {confianca_over15}% | O2.5: {confianca_over25}%")
                             st.session_state.jogos_ignorados.append(id_jogo)
