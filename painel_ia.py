@@ -625,18 +625,7 @@ if check_password():
                     elif id_jogo not in st.session_state.jogos_ignorados:
                         add_log(f"⚠️ IGNORADO: {casa} x {fora} (Confiança insuficiente)")
                         st.session_state.jogos_ignorados.append(id_jogo)
-
-                        registrar_resultado({'casa': casa, 'fora': fora, 'previsao': "2.5 Gols", 'odd': 2.00}, "PENDENTE", 0)
-                        
-                        st.session_state.aposta_pendente.append({'id': id_jogo, 'casa': casa, 'fora': fora, 'previsao': "2.5 Gols", 'valor': valor_entrada, 'odd': 2.00, 'data_api': data_api})
-                        add_log(f"🔥 SINAL O2.5: {casa} x {fora} ({confianca_over25}%) | Temp: {ano_base}")
-                        
-                    # Se TUDO for ruim, avisa no log APENAS UMA VEZ e põe na lista negra
-                        if confianca_vit_casa <= 75 and confianca_vit_fora <= 75 and confianca_over15 <= 80 and confianca_over25 <= 70:
-                        if id_jogo not in st.session_state.jogos_ignorados:
-                            add_log(f"⚠️ IGNORADO: {casa} x {fora} | V.C: {confianca_vit_casa}% | V.F: {confianca_vit_fora}% | O1.5: {confianca_over15}% | O2.5: {confianca_over25}%")
-                            st.session_state.jogos_ignorados.append(id_jogo)
-                        
+     
                 st.toast("Análise matemática com dados REAIS concluída!")
                     
         else:
