@@ -635,6 +635,17 @@ if check_password():
             st.success(f"Encontrados {len(jogos_dia)} jogos em Ligas de Ouro hoje.")
             # O robô entra na análise SE o piloto automático estiver ligado OU SE você clicar no botão manual
             if piloto_automatico or st.button("🧠 Aplicar Poisson (Modo Manual)"):
+                
+                # --- 🌪️ INÍCIO DA BOLA GIRANDO ---
+                loading_placeholder = st.empty()
+                loading_placeholder.markdown("""
+                    <div style='text-align: center; padding: 20px;'>
+                        <img src='https://cdn-icons-png.flaticon.com/512/188/188864.png' width='60' style='animation: spin 0.8s linear infinite;'>
+                        <p style='color: #00FF00; font-weight: bold; margin-top: 10px; font-size: 18px;'>⚽ IA SUPREMA ANALISANDO JOGOS...</p>
+                        <style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>
+                    </div>
+                """, unsafe_allow_html=True)
+                
                 for j in jogos_dia: # Analisa TODOS os jogos encontrados na varredura
                     casa = j['teams']['home']['name']
                     fora = j['teams']['away']['name']
@@ -698,6 +709,10 @@ if check_password():
                     elif id_jogo not in st.session_state.jogos_ignorados:
                         add_log(f"⚠️ IGNORADO: {casa} x {fora} (Confiança insuficiente)")
                         st.session_state.jogos_ignorados.append(id_jogo)
+                        
+                # --- 🧹 FIM DA BOLA GIRANDO ---
+                loading_placeholder.empty()
+                # ------------------------------       
      
                 st.toast("Análise matemática com dados REAIS concluída!")
                     
