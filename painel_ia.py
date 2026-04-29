@@ -384,6 +384,58 @@ if check_password():
     # =========================================================
     # 🔎 AUDITOR AUTOMÁTICO DE RESULTADOS (LÓGICA POR DATA)
     # =========================================================
+    def processar_vitoria_derrota(row, index, col_res):
+        """Busca o resultado real do jogo na API e atualiza a planilha."""
+        try:
+            # 1. Busca o status e placar do jogo na API
+            url = f"https://v3.football.api-sports.io/fixtures"
+            hoje = datetime.now().strftime("%Y-%m-%d")
+            querystring = {"date": hoje, "timezone": "America/Sao_Paulo"}
+            headers = {'x-apisports-key': API_KEY}
+            
+            resp = requests.get(url, headers=headers, params=querystring)
+            if resp.status_code != 200: return
+
+            jogos = resp.json().get('response', [])
+            for j in jogos:
+                casa_api = j['teams']['home']['name']
+                fora_api = j['teams']['away']['name']
+                
+                # Procura o jogo correspondente na planilha
+                if row['Casa'] == casa_api and row['Fora'] == fora_api:
+                    status = j['fixture']['status']['short']
+                    
+                    # Só processa se o jogo acabou (FT = Full Time)
+                    if status == "FT":
+                        gols_casa = j['goals']['home']
+                        gols_fora = j['goals']['away']
+                        total_gols = gols_casa + gols_fora
+                        previsao = row['Previsao_IA']
+                        resultado_final = "RED"
+                        
+                        # Lógica de validação do GREEN
+                        if previsao == "Over 2.5" and total_gols > 2.5: resultado_final = "GREEN"
+                        elif previsao == "1.5 Gols" and total_gols > 1.5: resultado_final = "GREEN"
+                        elif previsao == "Ambas Marcam (BTTS)" and gols_casa > 0 and gols_fora > 0: resultado_final = "GREEN"
+                        elif "Vitória Casa" in previsao and gols_casa > gols_fora: resultado_final = "GREEN"
+                        elif "Vitória Visitante" in previsao and gols_fora > gols_casa: resultado_final = "GREEN"
+
+                        # Calcula o lucro
+                        valor_aposta = float(row.get('Lucro', 0)) # Usamos o campo de controle temporário
+                        stake = float(banca * 0.02)
+                        lucro_final = (stake * float(row['Odd'])) - stake if resultado_final == "GREEN" else -stake
+
+                        # Atualiza a Planilha
+                        url_planilha = "https://docs.google.com/spreadsheets/d/1Y4D4t2svOeT24vnKcWnzDcwz7tPyRvkeDP8sSm_xPkQ/edit?usp=sharing"
+                        df_up = conn.read(spreadsheet=url_planilha, ttl=0)
+                        df_up.at[index, col_res] = resultado_final
+                        df_up.at[index, 'Lucro'] = lucro_final
+                        conn.update(spreadsheet=url_planilha, data=df_up)
+                        
+                        add_log(f"🏁 RESULTADO: {casa_api} x {fora_api} foi {resultado_final} ({gols_casa}-{gols_fora})")
+                        return
+        except Exception as e:
+            add_log(f"⚠️ Erro ao auditar: {e}")
     def auditar_resultados_pendentes():
         try:
             url_planilha = "https://docs.google.com/spreadsheets/d/1Y4D4t2svOeT24vnKcWnzDcwz7tPyRvkeDP8sSm_xPkQ/edit?usp=sharing"
