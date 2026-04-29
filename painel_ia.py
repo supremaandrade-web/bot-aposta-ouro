@@ -595,10 +595,13 @@ if check_password():
                     
                     # 3. SÓ PROCESSA SE A IA ENCONTRAR UMA OPORTUNIDADE REAL
                     if mercado_ia:
+                        # Criamos um ID único baseado no jogo e mercado
                         id_sinal = f"{id_jogo}_{mercado_ia.replace(' ', '_')}"
                         
+                        # NOVA TRAVA: Verifica na memória E evita duplicados no log
                         if id_sinal not in st.session_state.sinais_enviados:
-                            # ENVIA PARA O TELEGRAM (Usa a função VIP que já configuramos)
+                            
+                            # ENVIA PARA O TELEGRAM
                             sucesso = enviar_sinal_vip("PRE_MATCH", casa, fora, confianca_ia, mercado_ia, valor_entrada, horario_jogo, odd=str(odd_ia))
                             
                             if sucesso:
@@ -607,16 +610,21 @@ if check_password():
                                 # GRAVA NA PLANILHA (Histórico oficial)
                                 registrar_resultado({'casa': casa, 'fora': fora, 'previsao': mercado_ia, 'odd': odd_ia}, "PENDENTE", 0)
                                 
-                                # ADICIONA AO CARD DA TELA (Visualização imediata)
-                                st.session_state.aposta_pendente.append({
-                                    'id': id_jogo, 
-                                    'casa': casa, 
-                                    'fora': fora, 
-                                    'previsao': mercado_ia, 
-                                    'valor': valor_entrada, 
-                                    'odd': odd_ia, 
-                                    'data_api': data_api
-                                })
+                                add_log(f"🚀 SINAL VIP ENVIADO: {mercado_ia} em {casa} x {fora}")
+                                time.sleep(1) 
+
+                        # FORA DO IF DE ENVIO: Garantimos que o card apareça na tela mesmo se já foi enviado
+                        # Verificamos se o card já está na lista visual para não duplicar na TELA
+                        if not any(a['id'] == id_jogo for a in st.session_state.aposta_pendente):
+                            st.session_state.aposta_pendente.append({
+                                'id': id_jogo, 
+                                'casa': casa, 
+                                'fora': fora, 
+                                'previsao': mercado_ia, 
+                                'valor': valor_entrada, 
+                                'odd': odd_ia, 
+                                'data_api': data_api
+                            })
                                 
                                 add_log(f"🚀 SINAL VIP: {mercado_ia} em {casa} x {fora} ({confianca_ia}%)")
                                 time.sleep(1) # Delay de segurança para o Google Sheets
