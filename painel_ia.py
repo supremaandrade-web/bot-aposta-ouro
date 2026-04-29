@@ -739,8 +739,15 @@ if check_password():
         st.markdown("---")
         st.subheader("🔄 Gestão e Auditoria (Automático)")
         
-        if st.session_state.aposta_pendente:
-            st.warning(f"Existem {len(st.session_state.aposta_pendente)} apostas aguardando resultado.")
+        # NOVA LÓGICA: Lê a quantidade exata de pendentes direto da planilha
+        try:
+            df_auditoria = conn.read(spreadsheet=url_planilha, ttl=0)
+            qtd_pendentes = len(df_auditoria[df_auditoria['Resultado'] == 'PENDENTE'])
+        except:
+            qtd_pendentes = 0
+        
+        if qtd_pendentes > 0:
+            st.warning(f"Existem {qtd_pendentes} apostas aguardando resultado na Planilha.")
             
             # 🚨 CORREÇÃO CRÍTICA: Agora o Auditor trabalha sozinho se o Piloto estiver ON!
             if piloto_automatico or st.button("🔍 Auditar Resultados na API Agora"):
