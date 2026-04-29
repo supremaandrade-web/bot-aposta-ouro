@@ -98,6 +98,10 @@ if check_password():
             .stProgress > div > div > div > div {
                 background-color: #E5B80B !important;
             }
+            /* Esconde o menu superior do Streamlit e a marca d'água do rodapé */
+            [data-testid="stHeader"] {visibility: hidden;}
+            footer {visibility: hidden;}
+            #MainMenu {visibility: hidden;}
         </style>
     """, unsafe_allow_html=True)
     
