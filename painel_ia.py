@@ -614,20 +614,23 @@ if check_password():
 
     # --- 1. MOSTRAR CARDS PELA PLANILHA (NUNCA SOMEM AO ATUALIZAR) ---
     try:
-        df_pendentes = conn.read(spreadsheet=url_planilha, ttl=0)
+        conn = st.connection("gsheets", type=GSheetsConnection)
+        df_pendentes = conn.read(spreadsheet=url_planilha, ttl=15) # Mudamos para 15s para evitar bloqueio do Google
+        
         # Filtra apenas os jogos que ainda estão como PENDENTE
         df_filtrado = df_pendentes[df_pendentes['Resultado'] == 'PENDENTE']
         
         if not df_filtrado.empty:
             st.header(f"🏟️ Apostas Aguardando Resultado ({len(df_filtrado)})")
             for index, jogo in df_filtrado.iterrows():
-                with st.expander(f"⏳ {jogo['Casa']} x {jogo['Fora']}", expanded=True):
-                    st.write(f"**Entrada:** {jogo['Previsao_IA']} | **Odd:** {jogo['Odd']}")
+                with st.expander(f"⏳ {jogo.get('Casa', '')} x {jogo.get('Fora', '')}", expanded=True):
+                    st.write(f"**Entrada:** {jogo.get('Previsao_IA', '')} | **Odd:** {jogo.get('Odd', '')}")
                     st.caption("Status: PENDENTE (O Cron-job irá auditar este jogo ao final da partida)")
         else:
             st.info("Nenhuma aposta pendente no momento. Aguardando a IA encontrar novas oportunidades...")
     except Exception as e:
-        st.error("Erro ao carregar os cards da planilha.")
+        # AGORA ELE VAI MOSTRAR O MOTIVO EXATO DO ERRO
+        st.error(f"Erro ao carregar os cards da planilha: {e}")
 
     # --- 2. MOSTRAR HISTÓRICO PELA PLANILHA (OPCIONAL/APENAS LEITURA) ---
     try:
