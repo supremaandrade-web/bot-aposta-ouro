@@ -422,10 +422,10 @@ if check_password():
                         previsao = row['Previsao_IA']
                         resultado_final = "RED"
                         
-                        # Lógica de validação do GREEN
-                        if previsao == "Over 2.5" and total_gols > 2.5: resultado_final = "GREEN"
-                        elif previsao == "1.5 Gols" and total_gols > 1.5: resultado_final = "GREEN"
-                        elif previsao == "Ambas Marcam (BTTS)" and gols_casa > 0 and gols_fora > 0: resultado_final = "GREEN"
+                        # Lógica de validação do GREEN (Corrigida para ignorar Emojis)
+                        if "Over 2.5" in previsao and total_gols > 2.5: resultado_final = "GREEN"
+                        elif "Over 1.5" in previsao and total_gols > 1.5: resultado_final = "GREEN"
+                        elif "Ambas Marcam" in previsao and gols_casa > 0 and gols_fora > 0: resultado_final = "GREEN"
                         elif "Vitória Casa" in previsao and gols_casa > gols_fora: resultado_final = "GREEN"
                         elif "Vitória Visitante" in previsao and gols_fora > gols_casa: resultado_final = "GREEN"
 
