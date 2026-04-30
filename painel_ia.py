@@ -437,6 +437,12 @@ if check_password():
                         # Atualiza a Planilha
                         url_planilha = "https://docs.google.com/spreadsheets/d/1Y4D4t2svOeT24vnKcWnzDcwz7tPyRvkeDP8sSm_xPkQ/edit?usp=sharing"
                         df_up = conn.read(spreadsheet=url_planilha, ttl=0)
+                        
+                        # ⚠️ CORREÇÃO: Força a coluna 'Placar' a aceitar texto (string)
+                        if 'Placar' not in df_up.columns:
+                            df_up['Placar'] = ""
+                        df_up['Placar'] = df_up['Placar'].astype(str)
+                        
                         df_up.at[index, col_res] = resultado_final
                         df_up.at[index, 'Lucro'] = lucro_final
                         
