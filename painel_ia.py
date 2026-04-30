@@ -395,10 +395,11 @@ if check_password():
     def processar_vitoria_derrota(row, index, col_res):
         """Busca o resultado real do jogo na API e atualiza a planilha."""
         try:
-            # 1. Busca o status e placar do jogo na API
+            # 1. Pega a data exata do jogo pela planilha (resolve o problema de jogos de ontem)
+            data_do_jogo = str(row['Data'])[:10] 
+            
             url = f"https://v3.football.api-sports.io/fixtures"
-            hoje = datetime.now().strftime("%Y-%m-%d")
-            querystring = {"date": hoje, "timezone": "America/Sao_Paulo"}
+            querystring = {"date": data_do_jogo, "timezone": "America/Sao_Paulo"}
             headers = {'x-apisports-key': API_KEY}
             
             resp = requests.get(url, headers=headers, params=querystring)
@@ -438,6 +439,10 @@ if check_password():
                         df_up = conn.read(spreadsheet=url_planilha, ttl=0)
                         df_up.at[index, col_res] = resultado_final
                         df_up.at[index, 'Lucro'] = lucro_final
+                        
+                        # ⚽ NOVO: GRAVANDO O PLACAR
+                        df_up.at[index, 'Placar'] = f"{gols_casa} - {gols_fora}"
+                        
                         conn.update(spreadsheet=url_planilha, data=df_up)
                         
                         add_log(f"🏁 RESULTADO: {casa_api} x {fora_api} foi {resultado_final} ({gols_casa}-{gols_fora})")
